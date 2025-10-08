@@ -251,17 +251,21 @@ with tab_live:
             use_container_width=True
         )
 
-        # Clickable title links (simple list under the table)
-        st.markdown("**Quick links:**")
+        # Divider
+        st.markdown("---")
+
+        # Quick Links
+        st.markdown("### 🔗 Quick Links")
         for _, row in df.iterrows():
             title = str(row.get("title", "")).strip()
             url = str(row.get("viewItemURL", "")).strip()
             if title and url and url.startswith("http"):
                 st.markdown(f"- [{title}]({url})")
 
-        # Category badges (simple color tags)
+        # Category Badges
+        st.markdown("### 🏷 Categories")
         badge_colors = {"Watches": "#16a34a", "Toys": "#f59e0b", "Collectible Card Games": "#3b82f6"}
-        st.markdown("**Categories:** " + " ".join(
+        st.markdown(" ".join(
             [f"<span style='display:inline-block;padding:2px 8px;margin-right:6px;border-radius:999px;background:{badge_colors.get(str(cat),'#64748b')};color:white;font-size:12px'>{str(cat)}</span>"
              for cat in sorted(set(df["category"].dropna().astype(str))) if cat]
         ), unsafe_allow_html=True)
@@ -280,7 +284,6 @@ with tab_live:
             file_name="rareindex_results.csv",
             mime="text/csv"
         )
-
 
 # Info note (always visible)
 st.info("Waiting for eBay Growth Check approval. Live API calls will replace demo/CSV here when enabled.")
