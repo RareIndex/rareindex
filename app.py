@@ -82,6 +82,7 @@ def show_category(title, csv_path):
     except Exception as e:
         st.error(f"Error loading {csv_path}: {e}")
 
+st.markdown("<h3 style='text-align: center; font-size:20px;'>Explore Rare Index Categories</h3>", unsafe_allow_html=True)
 # --- Two tabs: Cards and Watches ---
 tab_cards, tab_watches = st.tabs(["Cards", "Watches"])
 with tab_cards:
@@ -91,5 +92,6 @@ with tab_watches:
 
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
+
 
 
