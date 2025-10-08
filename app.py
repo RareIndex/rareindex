@@ -62,17 +62,17 @@ def show_category(title, csv_path):
             st.line_chart(plot_df)
 
             col1, col2, col3 = st.columns(3)
-            col1.metric("Start (Jan)", f"${start:,.0f}")
-            col2.metric("Latest", f"${end:,.0f}")
-            col3.metric("ROI (Jan → Today)", f"{roi:.1f}%")
+            col1.metric("Starting Price (Jan 2025)", f"${start:,.0f}")
+            col2.metric("Latest Price", f"${end:,.0f}")
+            col3.metric("ROI Since Jan", f"{roi:.1f}%")
         else:
             # Price-only chart
             st.line_chart(df.set_index("date")["price_usd"])
 
             col1, col2, col3 = st.columns(3)
-            col1.metric("Start (Jan)", f"${start:,.0f}")
-            col2.metric("Latest", f"${end:,.0f}")
-            col3.metric("ROI (Jan → Today)", f"{roi:.1f}%")
+            col1.metric("Starting Price (Jan 2025)", f"${start:,.0f}")
+            col2.metric("Latest Price", f"${end:,.0f}")
+            col3.metric("ROI Since Jan", f"{roi:.1f}%")
 
         st.caption("Recent data points")
         st.dataframe(df.tail(5), width="stretch")
@@ -94,6 +94,7 @@ st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
+
 
 
 
