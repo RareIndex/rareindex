@@ -13,6 +13,7 @@ st.markdown("<h1 style='text-align: center; color: #2E8B57;'>The Rare Index</h1>
 st.markdown("<p style='text-align: center; font-size:18px;'>Tracking ROI of alternative assets</p>", unsafe_allow_html=True)
 
 # --- About blurb (below tagline) ---
+st.markdown("<p style='text-align: center; font-size:14px; color:#B22222;'>Demo Data Only — Not Financial Advice</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:16px; color:#555;'>The Rare Index is a demo platform showcasing how alternative assets like trading cards and watches can be tracked against traditional markets.</p>", unsafe_allow_html=True)
 
 st.markdown("---")
@@ -104,6 +105,7 @@ st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
+
 
 
 
