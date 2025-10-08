@@ -169,26 +169,17 @@ tab_cards, tab_watches, tab_toys = st.tabs(["Cards", "Watches", "Toys"])
 with tab_cards:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
     show_category("Lugia V Alt Art (Cards)", "cards.csv")
-with tab_cards:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
-    show_category("Lugia V Alt Art (Cards)", "cards.csv")
-    render_news("Cards")   # ← add this
+    render_news("Cards")
 
 with tab_watches:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a representative luxury watch reference.</p>", unsafe_allow_html=True)
     show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
-with tab_watches:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a representative luxury watch reference.</p>", unsafe_allow_html=True)
-    show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
-    render_news("Watches")  # ← add this
+    render_news("Watches")
 
 with tab_toys:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
     show_category("LEGO 75290 Mos Eisley Cantina (Toys)", "toys.csv")
-with tab_toys:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
-    show_category("LEGO 75290 Mos Eisley Cantina (Toys)", "toys.csv")
-    render_news("Toys")     # ← add this
+    render_news("Toys")
     
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
@@ -205,6 +196,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
