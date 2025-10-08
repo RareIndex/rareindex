@@ -59,41 +59,47 @@ MARKETS = {
     "Nasdaq 100 (~+18% YTD 2025)": 0.18,
     "Dow Jones (~+9.5% YTD 2025)": 0.095,
 }
+# --- News Feeds & Helpers ---
+
 # Simple RSS feeds for each category (feel free to adjust queries later)
 FEEDS = {
     "Cards": [
         "https://news.google.com/rss/search?q=pokemon+trading+cards",
         "https://news.google.com/rss/search?q=trading+cards+market",
-        "https://news.google.com/rss/search?q=TCG+sales"
+        "https://news.google.com/rss/search?q=TCG+sales",
     ],
     "Watches": [
         "https://news.google.com/rss/search?q=Rolex+watches",
         "https://news.google.com/rss/search?q=watch+auctions",
-        "https://news.google.com/rss/search?q=luxury+watch+market"
+        "https://news.google.com/rss/search?q=luxury+watch+market",
     ],
     "Toys": [
         "https://news.google.com/rss/search?q=LEGO+retired+sets",
         "https://news.google.com/rss/search?q=LEGO+investment",
-        "https://news.google.com/rss/search?q=toy+collectibles+market"
+        "https://news.google.com/rss/search?q=toy+collectibles+market",
     ],
 }
+
 @st.cache_data(ttl=600)
 def cached_fetch_news(feed_url: str, limit: int = 5):
+    """Cached wrapper so we don't fetch feeds on every rerun."""
     return fetch_news(feed_url, limit)
+
 def render_news(category_name: str):
-   def render_news(category_name: str):
     st.markdown("<h5 style='margin-top:0.5rem;'>Trending News</h5>", unsafe_allow_html=True)
     feeds = FEEDS.get(category_name, [])
     combined = []
     with st.spinner("Loading news..."):
         for url in feeds:
             combined.extend(cached_fetch_news(url, limit=3))
-    # dedupe by title (very simple)
+
+    # Deduplicate by title (very simple)
     seen = set()
     cleaned = []
     for item in combined:
-        if item["title"] not in seen:
-            seen.add(item["title"])
+        t = item.get("title", "")
+        if t and t not in seen:
+            seen.add(t)
             cleaned.append(item)
         if len(cleaned) >= 5:
             break
@@ -103,8 +109,12 @@ def render_news(category_name: str):
         return
 
     for item in cleaned:
-        pub = item["published"]
-        st.markdown(f"- [{item['title']}]({item['link']})  \n  <span style='color:#777;font-size:12px;'>{pub}</span>", unsafe_allow_html=True)
+        pub = item.get("published", "")
+        st.markdown(
+            f"- [{item.get('title','Untitled')}]({item.get('link','#')})  \n"
+            f"  <span style='color:#777;font-size:12px;'>{pub}</span>",
+            unsafe_allow_html=True,
+        )
 # --- Helper to load and show one category ---
 def show_category(title, csv_path):
     st.subheader(title)
@@ -201,6 +211,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
