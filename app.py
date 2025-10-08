@@ -2,7 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Rare Index (Demo)", layout="wide")
+st.set_page_config(
+    page_title="The Rare Index",
+    page_icon="favicon.png",
+    layout="wide"
+)
 st.markdown("<h1 style='text-align: center; color: #2E8B57;'>The Rare Index</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:18px;'>Tracking ROI of alternative assets</p>", unsafe_allow_html=True)
 st.markdown("---")
@@ -94,6 +98,7 @@ st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
+
 
 
 
