@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 
 st.set_page_config(page_title="Rare Index (Demo)", layout="wide")
-st.title("Rare Index — Demo (Cards & Watches)")
+st.markdown("<h1 style='text-align: center; color: black;'>The Rare Index</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-size:18px;'>Tracking ROI of alternative assets</p>", unsafe_allow_html=True)
+st.markdown("---")
 
 # ---- Simple index generator (demo): spread a chosen YTD over N months ----
 def make_index_series(final_return, n_points):
@@ -89,4 +91,5 @@ with tab_watches:
 
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
+
 
