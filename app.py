@@ -269,9 +269,9 @@ with tab_live:
         # Metrics
         prices = pd.to_numeric(df["price"], errors="coerce").dropna()
         c1, c2, c3 = st.columns(3)
-        c1.metric("Items", f"{len(df):,}")
-        c2.metric("Median price", f"${prices.median():,.2f}" if not prices.empty else "—")
-        c3.metric("Average price", f"${prices.mean():,.2f}" if not prices.empty else "—")
+        c1.metric("📦 Items", f"{len(df):,}")
+        c2.metric("💲 Median price", f"${prices.median():,.2f}" if not prices.empty else "—")
+        c3.metric("💰 Average price", f"${prices.mean():,.2f}" if not prices.empty else "—")
 
         # Download
         st.download_button(
@@ -280,6 +280,7 @@ with tab_live:
             file_name="rareindex_results.csv",
             mime="text/csv"
         )
+
 
 # Info note (always visible)
 st.info("Waiting for eBay Growth Check approval. Live API calls will replace demo/CSV here when enabled.")
