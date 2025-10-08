@@ -1,6 +1,25 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import feedparser
+from datetime import datetime
+
+def fetch_news(feed_url: str, limit: int = 5):
+    """
+    Returns a list of dicts: [{title, link, published}] from an RSS/Atom feed.
+    Keeps it very small and safe.
+    """
+    try:
+        d = feedparser.parse(feed_url)
+        items = []
+        for entry in d.entries[:limit]:
+            title = entry.get("title", "Untitled")
+            link = entry.get("link", "#")
+            published = entry.get("published", "") or entry.get("updated", "")
+            items.append({"title": title, "link": link, "published": published})
+        return items
+    except Exception:
+        return []
 
 st.set_page_config(
     page_title="The Rare Index",
@@ -40,7 +59,47 @@ MARKETS = {
     "Nasdaq 100 (~+18% YTD 2025)": 0.18,
     "Dow Jones (~+9.5% YTD 2025)": 0.095,
 }
+# Simple RSS feeds for each category (feel free to adjust queries later)
+FEEDS = {
+    "Cards": [
+        "https://news.google.com/rss/search?q=pokemon+trading+cards",
+        "https://news.google.com/rss/search?q=trading+cards+market",
+        "https://news.google.com/rss/search?q=TCG+sales"
+    ],
+    "Watches": [
+        "https://news.google.com/rss/search?q=Rolex+watches",
+        "https://news.google.com/rss/search?q=watch+auctions",
+        "https://news.google.com/rss/search?q=luxury+watch+market"
+    ],
+    "Toys": [
+        "https://news.google.com/rss/search?q=LEGO+retired+sets",
+        "https://news.google.com/rss/search?q=LEGO+investment",
+        "https://news.google.com/rss/search?q=toy+collectibles+market"
+    ],
+}
+def render_news(category_name: str):
+    st.markdown("<h5 style='margin-top:0.5rem;'>Trending News</h5>", unsafe_allow_html=True)
+    feeds = FEEDS.get(category_name, [])
+    combined = []
+    for url in feeds:
+        combined.extend(fetch_news(url, limit=3))
+    # dedupe by title (very simple)
+    seen = set()
+    cleaned = []
+    for item in combined:
+        if item["title"] not in seen:
+            seen.add(item["title"])
+            cleaned.append(item)
+        if len(cleaned) >= 5:
+            break
 
+    if not cleaned:
+        st.caption("No news found right now.")
+        return
+
+    for item in cleaned:
+        pub = item["published"]
+        st.markdown(f"- [{item['title']}]({item['link']})  \n  <span style='color:#777;font-size:12px;'>{pub}</span>", unsafe_allow_html=True)
 # --- Helper to load and show one category ---
 def show_category(title, csv_path):
     st.subheader(title)
@@ -110,14 +169,26 @@ tab_cards, tab_watches, tab_toys = st.tabs(["Cards", "Watches", "Toys"])
 with tab_cards:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
     show_category("Lugia V Alt Art (Cards)", "cards.csv")
+with tab_cards:
+    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
+    show_category("Lugia V Alt Art (Cards)", "cards.csv")
+    render_news("Cards")   # ← add this
 
 with tab_watches:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a representative luxury watch reference.</p>", unsafe_allow_html=True)
     show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
+with tab_watches:
+    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a representative luxury watch reference.</p>", unsafe_allow_html=True)
+    show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
+    render_news("Watches")  # ← add this
 
 with tab_toys:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
     show_category("LEGO 75290 Mos Eisley Cantina (Toys)", "toys.csv")
+with tab_toys:
+    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
+    show_category("LEGO 75290 Mos Eisley Cantina (Toys)", "toys.csv")
+    render_news("Toys")     # ← add this
     
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
@@ -134,6 +205,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
