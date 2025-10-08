@@ -83,9 +83,10 @@ def show_category(title, csv_path):
 # --- Two tabs: Cards and Watches ---
 tab_cards, tab_watches = st.tabs(["Cards", "Watches"])
 with tab_cards:
-    show_category("Lugia V Alt Art (Cards)", "../data/cards.csv")
+    show_category("Lugia V Alt Art (Cards)", "cards.csv")
 with tab_watches:
-    show_category("Rolex Submariner 116610LN (Watches)", "../data/watches.csv")
+    show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
 
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
+
