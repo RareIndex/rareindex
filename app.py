@@ -72,14 +72,23 @@ def show_category(title, csv_path):
                 market_choice: market_index
             }, index=df["date"])
 
+            # Title above the comparison chart
+            st.markdown(f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>", unsafe_allow_html=True)
             st.line_chart(plot_df)
 
-            col1, col2, col3 = st.columns(3)
+            # metrics
+            col1, col2, col3, col4 = st.columns(4)
             col1.metric("Starting Price (Jan 2025)", f"${start:,.0f}")
             col2.metric("Latest Price", f"${end:,.0f}")
             col3.metric("ROI Since Jan", f"{roi:.1f}%")
+            # outperformance in percentage points
+            item_last = float(item_index.iloc[-1]) if hasattr(item_index, "iloc") else float(item_index[-1])
+            market_last = float(market_index[-1])
+            outperf_pp = (item_last - market_last)  # both are on a 100-based index
+            col4.metric("Outperformance vs Index", f"{outperf_pp:+.1f} pp")
+
         else:
-            # Price-only chart
+            # Price-only chart with title
             st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend</h4>", unsafe_allow_html=True)
             st.line_chart(df.set_index("date")["price_usd"])
 
@@ -95,8 +104,6 @@ def show_category(title, csv_path):
         st.warning(f"Could not find {csv_path}. Make sure the file exists.")
     except Exception as e:
         st.error(f"Error loading {csv_path}: {e}")
-
-st.markdown("<h3 style='text-align: center; font-size:20px;'>Explore Rare Index Categories</h3>", unsafe_allow_html=True)
 # --- Three tabs: Cards, Watches, Toys ---
 tab_cards, tab_watches, tab_toys = st.tabs(["Cards", "Watches", "Toys"])
 
@@ -118,6 +125,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
