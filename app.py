@@ -77,12 +77,17 @@ FEEDS = {
         "https://news.google.com/rss/search?q=toy+collectibles+market"
     ],
 }
+@st.cache_data(ttl=600)
+def cached_fetch_news(feed_url: str, limit: int = 5):
+    return fetch_news(feed_url, limit)
 def render_news(category_name: str):
+   def render_news(category_name: str):
     st.markdown("<h5 style='margin-top:0.5rem;'>Trending News</h5>", unsafe_allow_html=True)
     feeds = FEEDS.get(category_name, [])
     combined = []
-    for url in feeds:
-        combined.extend(fetch_news(url, limit=3))
+    with st.spinner("Loading news..."):
+        for url in feeds:
+            combined.extend(cached_fetch_news(url, limit=3))
     # dedupe by title (very simple)
     seen = set()
     cleaned = []
@@ -196,6 +201,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
