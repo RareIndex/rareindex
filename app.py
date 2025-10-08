@@ -121,10 +121,20 @@ with tab_toys:
     
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
+# --- Latest Updates Section ---
+st.markdown("## 📢 Latest Updates")
+
+st.markdown("""
+- **Oct 2025:** Demo site launched with Cards, Watches, and Toys.
+- **Sep 2025:** Lugia V Alt Art sales stable around $420–450 range.
+- **Sep 2025:** Rolex Submariner 116610LN resale prices holding steady despite market dip.
+- **Aug 2025:** LEGO 75290 Mos Eisley Cantina shows consistent ROI trend.
+""")
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
