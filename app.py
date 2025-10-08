@@ -1,3 +1,7 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+
 st.set_page_config(
     page_title="The Rare Index",
     page_icon="favicon.png",
@@ -11,19 +15,6 @@ st.markdown("<p style='text-align: center; font-size:18px;'>Tracking ROI of alte
 # --- About blurb (below tagline) ---
 st.markdown("<p style='text-align: center; font-size:16px; color:#555;'>The Rare Index is a demo platform showcasing how alternative assets like trading cards and watches can be tracked against traditional markets.</p>", unsafe_allow_html=True)
 
-st.markdown("---")
-import streamlit as st
-import pandas as pd
-import numpy as np
-
-st.set_page_config(
-    page_title="The Rare Index",
-    page_icon="favicon.png",
-    layout="wide"
-)
-st.markdown("<p style='text-align: center; font-size:16px; color:#555;'>The Rare Index is a demo platform showcasing how alternative assets like trading cards and watches can be tracked against traditional markets.</p>", unsafe_allow_html=True)
-st.markdown("<h1 style='text-align: center; color: #2E8B57;'>The Rare Index</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size:18px;'>Tracking ROI of alternative assets</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ---- Simple index generator (demo): spread a chosen YTD over N months ----
@@ -113,6 +104,7 @@ st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
+
 
 
 
