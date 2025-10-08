@@ -170,10 +170,77 @@ def show_category(title, csv_path):
     except Exception as e:
         st.error(f"Error loading {csv_path}: {e}")
 
-# --- Tabs: Cards, Watches, Toys, Live eBay ---
-tab_cards, tab_watches, tab_toys, tab_live, tab_roi = st.tabs(
-    ["Cards", "Watches", "Toys", "Live eBay (beta)", "ROI Calculator"]
+# --- Helper: compute ROI from a CSV (first vs latest) ---
+def calc_roi_from_csv(name: str, category: str, csv_path: str):
+    """
+    Returns a dict with name, category, start, latest, roi_pct.
+    If anything goes wrong (missing file/columns), roi_pct is None.
+    """
+    try:
+        df = pd.read_csv(csv_path)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").reset_index(drop=True)
+
+        start = float(df["price_usd"].iloc[0])
+        latest = float(df["price_usd"].iloc[-1])
+        roi_pct = ((latest - start) / start) * 100.0
+        return {"name": name, "category": category, "start": start, "latest": latest, "roi_pct": roi_pct}
+    except Exception:
+        return {"name": name, "category": category, "start": None, "latest": None, "roi_pct": None}
+
+# --- Tabs: Cards, Watches, Toys, Live eBay, ROI, Top 10 ---
+tab_cards, tab_watches, tab_toys, tab_live, tab_roi, tab_top10 = st.tabs(
+    ["Cards", "Watches", "Toys", "Live eBay (beta)", "ROI Calculator", "Top 10 (Demo)"]
 )
+
+# --- Top 10 ROI (Demo) ---
+with tab_top10:
+    st.markdown("### 🏆 Top 10 ROI (Demo)")
+
+    # Demo catalog: add more rows here later as you create more CSVs
+    demo_items = [
+        {"name": "Lugia V Alt Art", "category": "Cards",   "csv": "cards.csv"},
+        {"name": "Rolex Submariner 116610LN", "category": "Watches", "csv": "watches.csv"},
+        {"name": "LEGO 75290 Mos Eisley Cantina", "category": "Toys", "csv": "toys.csv"},
+    ]
+
+    # Compute ROI for each item (first vs latest row in each CSV)
+    results = [calc_roi_from_csv(x["name"], x["category"], x["csv"]) for x in demo_items]
+
+    # Build DataFrame and clean
+    df_top = pd.DataFrame(results)
+    df_top = df_top.dropna(subset=["roi_pct"]).copy()
+
+    if not df_top.empty:
+        # Sort by ROI desc and keep top 10
+        df_top = df_top.sort_values("roi_pct", ascending=False).head(10).reset_index(drop=True)
+
+        # Pretty columns
+        df_top["Start ($)"]  = df_top["start"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+        df_top["Latest ($)"] = df_top["latest"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+        df_top["ROI (%)"]    = df_top["roi_pct"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+        # Show table
+        st.dataframe(
+            df_top[["name", "category", "Start ($)", "Latest ($)", "ROI (%)"]],
+            use_container_width=True
+        )
+
+        # Quick metrics
+        c1, c2 = st.columns(2)
+        c1.metric("Entries ranked", f"{len(df_top)}")
+        c2.metric("Top ROI", df_top.iloc[0]["ROI (%)"] if len(df_top) else "—")
+
+        # Download Top 10 table as CSV
+        csv_bytes = df_top[["name", "category", "Start ($)", "Latest ($)", "ROI (%)"]].to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Top 10 as CSV",
+            csv_bytes,
+            file_name="top10_demo.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No ROI data available yet. Make sure your CSVs exist and have 'date' and 'price_usd' columns.")
 
 with tab_cards:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
