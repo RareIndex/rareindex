@@ -171,7 +171,9 @@ def show_category(title, csv_path):
         st.error(f"Error loading {csv_path}: {e}")
 
 # --- Tabs: Cards, Watches, Toys, Live eBay ---
-tab_cards, tab_watches, tab_toys, tab_live = st.tabs(["Cards", "Watches", "Toys", "Live eBay (beta)"])
+tab_cards, tab_watches, tab_toys, tab_live, tab_roi = st.tabs(
+    ["Cards", "Watches", "Toys", "Live eBay (beta)", "ROI Calculator"]
+)
 
 with tab_cards:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
@@ -284,6 +286,21 @@ with tab_live:
             file_name="rareindex_results.csv",
             mime="text/csv"
         )
+
+with tab_roi:
+    st.markdown("### 📊 ROI Calculator")
+
+    buy_price = st.number_input("Enter Buy Price ($)", min_value=0.0, step=1.0, format="%.2f")
+    current_price = st.number_input("Enter Current Price ($)", min_value=0.0, step=1.0, format="%.2f")
+    years_held = st.number_input("Years Held", min_value=0.0, step=0.5, format="%.1f")
+
+    if buy_price > 0 and current_price > 0:
+        roi = ((current_price - buy_price) / buy_price) * 100
+        st.metric("Return on Investment (ROI %)", f"{roi:.2f}%")
+
+        if years_held > 0:
+            cagr = ((current_price / buy_price) ** (1 / years_held) - 1) * 100
+            st.metric("Compound Annual Growth Rate (CAGR %)", f"{cagr:.2f}%")
 
 # Info note (always visible)
 st.info("Waiting for eBay Growth Check approval. Live API calls will replace demo/CSV here when enabled.")
