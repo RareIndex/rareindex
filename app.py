@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import feedparser
 from datetime import datetime
+from utils.newsletter import render_newsletter_tools
 
 def fetch_news(feed_url: str, limit: int = 5):
     """
@@ -444,4 +445,5 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
