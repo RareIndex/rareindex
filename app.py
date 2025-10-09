@@ -239,6 +239,20 @@ with tab_top10:
             file_name="top10_demo.csv",
             mime="text/csv"
         )
+        # --- Newsletter snippet (Markdown) ---
+        st.markdown("#### ✉️ Newsletter snippet (Markdown)")
+        today = pd.Timestamp.today().strftime("%b %d, %Y")
+
+        # Build simple bullet list from current Top 10 table
+        lines = [f"**Top ROI — {today}**", ""]
+        for i, row in df_top.iterrows():
+            lines.append(f"{i+1}. **{row['name']}** ({row['category']}): {row['ROI (%)']}")
+
+        snippet = "\n".join(lines)
+
+        # Read-only preview you can copy into Substack/Mailchimp/email
+        st.text_area("Copy text", value=snippet, height=200)
+
     else:
         st.info("No ROI data available yet. Make sure your CSVs exist and have 'date' and 'price_usd' columns.")
 
