@@ -250,8 +250,51 @@ with tab_top10:
 
         snippet = "\n".join(lines)
 
-        # Read-only preview you can copy into Substack/Mailchimp/email
-        st.text_area("Copy text", value=snippet, height=200)
+        # Editable preview + tools
+st.markdown("#### ✂️ Newsletter tools")
+editable_snippet = st.text_area(
+    "Preview / edit",
+    value=snippet,
+    height=260
+)
+
+# 1) Download as .txt (dated filename)
+date_str = pd.Timestamp.today().strftime("%Y-%m-%d")
+st.download_button(
+    label="⬇️ Download .txt",
+    data=editable_snippet,
+    file_name=f"rare-index-newsletter-{date_str}.txt",
+    mime="text/plain",
+    help="Save your newsletter snippet as a .txt file"
+)
+
+# 2) Copy to clipboard (JS helper that syncs with the visible text_area)
+st.markdown(
+    f"""
+    <textarea id="ri-newsletter-src" style="position:absolute; left:-9999px;">{editable_snippet}</textarea>
+    <button id="ri-copy-btn">📋 Copy to clipboard</button>
+    <span id="ri-copy-status" style="margin-left:8px; font-size:0.9em; opacity:0.8;"></span>
+    <script>
+      const btn = document.getElementById('ri-copy-btn');
+      const src = document.getElementById('ri-newsletter-src');
+      const status = document.getElementById('ri-copy-status');
+      btn.onclick = async () => {{
+        try {{
+          // Find the Streamlit textarea labeled "Preview / edit"
+          const ta = window.parent.document.querySelector('textarea[aria-label="Preview / edit"]');
+          if (ta) src.value = ta.value;  // sync hidden textarea
+          await navigator.clipboard.writeText(src.value);
+          status.textContent = "Copied!";
+          setTimeout(()=> status.textContent = "", 1500);
+        }} catch (e) {{
+          status.textContent = "Copy failed";
+          setTimeout(()=> status.textContent = "", 1500);
+        }}
+      }};
+    </script>
+    """,
+    unsafe_allow_html=True
+)
 
     else:
         st.info("No ROI data available yet. Make sure your CSVs exist and have 'date' and 'price_usd' columns.")
@@ -401,3 +444,4 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
