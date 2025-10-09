@@ -41,33 +41,32 @@ def render_newsletter_tools(snippet: str, key: str = "newsletter"):
 
     st.markdown(
         f"""
-        <textarea id="{key}-src" style="position:absolute; left:-9999px;">{safe_html}</textarea>
-        <button id="{key}-copy-btn" {'disabled' if disabled else ''}>📋 Copy to clipboard</button>
-        <span id="{key}-copy-status" style="margin-left:8px; font-size:0.9em; opacity:0.8;"></span>
-        <script>
-          const btn = document.getElementById('{key}-copy-btn');
-          const src = document.getElementById('{key}-src');
-          const status = document.getElementById('{key}-copy-status');
-          const queryLabel = 'textarea[aria-label="Preview / edit"]';
-          // find the nearest textarea above this block (Streamlit renders in order)
-          function findVisibleTextArea() {{
-            const areas = window.parent.document.querySelectorAll(queryLabel);
-            return areas[areas.length - 1] || null;
-          }}
-          btn && (btn.onclick = async () => {{
-            if (btn.disabled) return;
-            try {{
-              const ta = findVisibleTextArea();
-              if (ta) src.value = ta.value;
-              await navigator.clipboard.writeText(src.value);
-              status.textContent = "Copied!";
-              setTimeout(()=> status.textContent = "", 1500);
-            }} catch (e) {{
-              status.textContent = "Copy failed";
-              setTimeout(()=> status.textContent = "", 1500);
-            }}
-          }});
-        </script>
+<textarea id="{key}-src" style="position:absolute; left:-9999px;">{safe_html}</textarea>
+<button id="{key}-copy-btn" {'disabled' if disabled else ''}>📋 Copy to clipboard</button>
+<span id="{key}-copy-status" style="margin-left:8px; font-size:0.9em; opacity:0.8;"></span>
+<script>
+  const btn = document.getElementById('{key}-copy-btn');
+  const src = document.getElementById('{key}-src');
+  const status = document.getElementById('{key}-copy-status');
+  const queryLabel = 'textarea[aria-label="Preview / edit"]';
+  function findVisibleTextArea() {{
+    const areas = window.parent.document.querySelectorAll(queryLabel);
+    return areas[areas.length - 1] || null;
+  }}
+  btn && (btn.onclick = async () => {{
+    if (btn.disabled) return;
+    try {{
+      const ta = findVisibleTextArea();
+      if (ta) src.value = ta.value;
+      await navigator.clipboard.writeText(src.value);
+      status.textContent = "Copied!";
+      setTimeout(()=> status.textContent = "", 1500);
+    }} catch (e) {{
+      status.textContent = "Copy failed";
+      setTimeout(()=> status.textContent = "", 1500);
+    }}
+  }});
+</script>
         """,
         unsafe_allow_html=True
     )
