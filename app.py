@@ -216,11 +216,38 @@ def calc_roi_from_csv(name: str, category: str, csv_path: str):
     except Exception:
         return {"name": name, "category": category, "start": None, "latest": None, "roi_pct": None}
 
-# --- Tabs: Cards, Watches, Toys, Live eBay, ROI, Top 10 ---
-tab_cards, tab_watches, tab_toys, tab_live, tab_roi, tab_top10 = st.tabs(
-    ["Cards", "Watches", "Toys", "Live eBay (beta)", "ROI Calculator", "Top 10 (Demo)"]
+# --- Tabs: Cards, Watches, Toys, Live eBay, ROI, Top 10, Validator ---
+tab_cards, tab_watches, tab_toys, tab_live, tab_roi, tab_top10, tab_validator = st.tabs(
+    ["Cards", "Watches", "Toys", "Live eBay (beta)", "ROI Calculator", "Top 10 (Demo)", "Validator"]
 )
 
+# --- Validator Tab ---
+with tab_validator:
+    st.markdown("### ✅ CSV Validator")
+    st.caption("Check your file before adding it to the repo. Required columns: **date, price_usd**. Dates should be monthly.")
+
+    uploaded = st.file_uploader("Upload a CSV to validate", type=["csv"], key="validator_uploader")
+    if uploaded is not None:
+        result = validate_timeseries_csv(uploaded)
+        level = result["level"]
+        msgs = result["messages"]
+
+        if level == "error":
+            st.error("Validation failed.")
+        elif level == "warn":
+            st.warning("Validation warnings.")
+        else:
+            st.success("Validation OK.")
+
+        for m in msgs:
+            st.write("•", m)
+
+        if result.get("df") is not None:
+            st.markdown("**Preview (first & last 5 rows)**")
+            df_clean = result["df"]
+            st.dataframe(df_clean.head(5), use_container_width=True)
+            st.dataframe(df_clean.tail(5), use_container_width=True)
+            
 # --- Top 10 ROI (Demo) ---
 with tab_top10:
     st.markdown("### 🏆 Top 10 ROI (Demo)")
@@ -450,6 +477,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
