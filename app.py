@@ -62,6 +62,33 @@ def make_index_series(final_return, n_points):
         levels.append(levels[-1] * (1 + r))
     return np.array(levels)
 
+# --- Helper: Slice dataframe by date range (3M / 6M / 1Y / 2Y / YTD / All) ---
+def slice_by_range(df: pd.DataFrame, range_key: str) -> pd.DataFrame:
+    """
+    Returns a sliced df by range:
+    '3M','6M','1Y','2Y','YTD','All'
+    Assumes df has a 'date' column (datetime) and is sorted.
+    """
+    if df.empty:
+        return df.copy()
+
+    end = df["date"].max()
+
+    if range_key == "All":
+        return df.copy()
+    if range_key == "YTD":
+        start = pd.Timestamp(year=end.year, month=1, day=1)
+        return df[df["date"] >= start].copy()
+
+    months_map = {"3M": 3, "6M": 6, "1Y": 12, "2Y": 24}
+    if range_key in months_map:
+        months = months_map[range_key]
+        start = end - pd.DateOffset(months=months-1)
+        return df[df["date"] >= start].copy()
+
+    # Fallback
+    return df.copy()
+
 # Fixed demo YTDs for 2025 (tweak later if you want)
 MARKETS = {
     "S&P 500 (~+12% YTD 2025)": 0.12,
@@ -477,6 +504,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
