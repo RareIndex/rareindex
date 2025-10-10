@@ -1,3 +1,4 @@
+import glob, re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -223,12 +224,18 @@ tab_cards, tab_watches, tab_toys, tab_live, tab_roi, tab_top10 = st.tabs(
 with tab_top10:
     st.markdown("### 🏆 Top 10 ROI (Demo)")
 
-    demo_items = [
-        {"name": "Card #010 (Demo)", "category": "Cards", "csv": "data/cards/cards_010.csv"},
-        {"name": "Card #011 (Demo)", "category": "Cards", "csv": "data/cards/cards_011.csv"},
-        {"name": "Card #012 (Demo)", "category": "Cards", "csv": "data/cards/cards_012.csv"},
+     # Auto-discover all card CSVs
+    card_paths = sorted(glob.glob("data/cards/cards_*.csv"))
+    card_items = []
+    for p in card_paths:
+        m = re.search(r"cards_(\d+)\.csv$", p)
+        label = f"Card #{m.group(1)} (Demo)" if m else "Card (Demo)"
+        card_items.append({"name": label, "category": "Cards", "csv": p})
+
+    # Add non-card demo rows
+    demo_items = card_items + [
         {"name": "Rolex Submariner 116610LN", "category": "Watches", "csv": "watches.csv"},
-        {"name": "LEGO 75290 Mos Eisley Cantina", "category": "Toys", "csv": "toys.csv"}
+        {"name": "LEGO 75290 Mos Eisley Cantina", "category": "Toys",    "csv": "toys.csv"},
     ]
 
     # Compute ROI for each item (first vs latest row in each CSV)
@@ -442,6 +449,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
