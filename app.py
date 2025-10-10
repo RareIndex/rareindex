@@ -123,48 +123,66 @@ def show_category(title, csv_path):
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
 
-        # basic ROI
-        start = float(df["price_usd"].iloc[0])
-        end = float(df["price_usd"].iloc[-1])
-        roi = ((end - start) / start) * 100.0
-
-        # UI: toggle + market choice
+        # ---- Options
         with st.expander("Options", expanded=False):
             compare = st.checkbox("Compare to a stock index", value=False, key=f"cmp_{title}")
             market_choice = st.selectbox("Choose index", list(MARKETS.keys()), index=0, key=f"mkt_{title}")
+            jan_baseline = st.checkbox("Use Jan 2025 as baseline (if available)", value=True, key=f"jan_{title}")
+
+        # ---- Choose the slice we use for plotting + metrics
+        if jan_baseline:
+            df_use = df[df["date"] >= pd.Timestamp("2025-01-01")].copy()
+            # Fallback to full if no 2025 data
+            if df_use.empty:
+                df_use = df.copy()
+        else:
+            df_use = df.copy()
+
+        # Safety check — if df_use is still empty (e.g., bad CSV)
+        if df_use.empty:
+            st.warning("No data available for the selected baseline window.")
+            return
+
+        # basic ROI on the chosen slice
+        start = float(df_use["price_usd"].iloc[0])
+        end = float(df_use["price_usd"].iloc[-1])
+        roi = ((end - start) / start) * 100.0
+
+        start_label = f"Starting Price ({df_use['date'].iloc[0].strftime('%b %Y')})"
 
         if compare:
-            item_index = (df["price_usd"] / df["price_usd"].iloc[0]) * 100.0
+            item_index = (df_use["price_usd"] / df_use["price_usd"].iloc[0]) * 100.0
+            # Build matched-length market series
             market_ytd = MARKETS[market_choice]
-            market_index = make_index_series(market_ytd, len(df))
+            market_index = make_index_series(market_ytd, len(df_use))
 
-            plot_df = pd.DataFrame({
-                title: item_index.values,
-                market_choice: market_index
-            }, index=df["date"])
+            plot_df = pd.DataFrame(
+                {title: item_index.values, market_choice: market_index},
+                index=df_use["date"]
+            )
 
             st.markdown(f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>", unsafe_allow_html=True)
             st.line_chart(plot_df)
 
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Starting Price (Jan 2025)", f"${start:,.0f}")
+            col1.metric(start_label, f"${start:,.0f}")
             col2.metric("Latest Price", f"${end:,.0f}")
-            col3.metric("ROI Since Jan", f"{roi:.1f}%")
-            item_last = float(item_index.iloc[-1]) if hasattr(item_index, "iloc") else float(item_index[-1])
+            col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
+            item_last = float(item_index.iloc[-1])
             market_last = float(market_index[-1])
             outperf_pp = (item_last - market_last)
             col4.metric("Outperformance vs Index", f"{outperf_pp:+.1f} pp")
         else:
             st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend</h4>", unsafe_allow_html=True)
-            st.line_chart(df.set_index("date")["price_usd"])
+            st.line_chart(df_use.set_index("date")["price_usd"])
 
             col1, col2, col3 = st.columns(3)
-            col1.metric("Starting Price (Jan 2025)", f"${start:,.0f}")
+            col1.metric(start_label, f"${start:,.0f}")
             col2.metric("Latest Price", f"${end:,.0f}")
-            col3.metric("ROI Since Jan", f"{roi:.1f}%")
+            col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
 
         st.caption("Recent data points")
-        st.dataframe(df.tail(5), width="stretch")
+        st.dataframe(df_use.tail(5), width="stretch")
 
     except FileNotFoundError:
         st.warning(f"Could not find {csv_path}. Make sure the file exists.")
@@ -422,6 +440,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
