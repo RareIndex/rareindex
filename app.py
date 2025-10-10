@@ -208,6 +208,26 @@ with tab_top10:
     # Compute ROI for each item (first vs latest row in each CSV)
     results = [calc_roi_from_csv(x["name"], x["category"], x["csv"]) for x in demo_items]
 
+    # --- DEBUG (temporary) ---
+    with st.expander("🔧 Debug Top 10 items (temporary)"):
+        import os
+        df_raw = pd.DataFrame(results)  # before dropping NaNs
+        st.write("Raw results:", df_raw)
+        for x in demo_items:
+            p = x["csv"]
+            exists = os.path.exists(p)
+            st.write(f"{x['name']} → {p} → exists: {exists}")
+            if exists:
+                try:
+                    st.write(pd.read_csv(p, nrows=2))
+                except Exception as e:
+                    st.write("read error:", str(e))
+
+    # Build DataFrame and clean
+    df_top = pd.DataFrame(results)
+    df_top = df_top.dropna(subset=["roi_pct"]).copy()
+
+    
     # Build DataFrame and clean
     df_top = pd.DataFrame(results)
     df_top = df_top.dropna(subset=["roi_pct"]).copy()
@@ -401,6 +421,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
