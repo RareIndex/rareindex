@@ -5,6 +5,14 @@ import feedparser
 from datetime import datetime
 from utils.newsletter import render_newsletter_tools
 
+@st.cache_data(ttl=600)
+def read_csv_cached(path):
+    """Reads and cleans a CSV once, caches it for 10 minutes."""
+    df = pd.read_csv(path)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
+    return df
+
 def fetch_news(feed_url: str, limit: int = 5):
     """
     Returns a list of dicts: [{title, link, published}] from an RSS/Atom feed.
@@ -92,7 +100,7 @@ def render_news(category_name: str):
         for url in feeds:
             combined.extend(cached_fetch_news(url, limit=3))
 
-    # Deduplicate by title (very simple)
+        # Deduplicate by title (very simple)
     seen = set()
     cleaned = []
     for item in combined:
@@ -107,6 +115,7 @@ def render_news(category_name: str):
         st.caption("No news found right now.")
         return
 
+    # Loop through cleaned items (properly indented)
     for item in cleaned:
         pub = item.get("published", "")
         st.markdown(
@@ -119,9 +128,8 @@ def render_news(category_name: str):
 def show_category(title, csv_path):
     st.subheader(title)
     try:
-        df = pd.read_csv(csv_path)
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").reset_index(drop=True)
+        # Cached CSV read
+        df = read_csv_cached(csv_path)
 
         # ---- Options
         with st.expander("Options", expanded=False):
@@ -132,7 +140,6 @@ def show_category(title, csv_path):
         # ---- Choose the slice we use for plotting + metrics
         if jan_baseline:
             df_use = df[df["date"] >= pd.Timestamp("2025-01-01")].copy()
-            # Fallback to full if no 2025 data
             if df_use.empty:
                 df_use = df.copy()
         else:
@@ -147,20 +154,15 @@ def show_category(title, csv_path):
         start = float(df_use["price_usd"].iloc[0])
         end = float(df_use["price_usd"].iloc[-1])
         roi = ((end - start) / start) * 100.0
-
         start_label = f"Starting Price ({df_use['date'].iloc[0].strftime('%b %Y')})"
 
         if compare:
             item_index = (df_use["price_usd"] / df_use["price_usd"].iloc[0]) * 100.0
-            # Build matched-length market series
             market_ytd = MARKETS[market_choice]
             market_index = make_index_series(market_ytd, len(df_use))
 
-            plot_df = pd.DataFrame(
-                {title: item_index.values, market_choice: market_index},
-                index=df_use["date"]
-            )
-
+            plot_df = pd.DataFrame({title: item_index.values, market_choice: market_index},
+                                   index=df_use["date"])
             st.markdown(f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>", unsafe_allow_html=True)
             st.line_chart(plot_df)
 
@@ -170,8 +172,7 @@ def show_category(title, csv_path):
             col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
             item_last = float(item_index.iloc[-1])
             market_last = float(market_index[-1])
-            outperf_pp = (item_last - market_last)
-            col4.metric("Outperformance vs Index", f"{outperf_pp:+.1f} pp")
+            col4.metric("Outperformance vs Index", f"{(item_last - market_last):+.1f} pp")
         else:
             st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend</h4>", unsafe_allow_html=True)
             st.line_chart(df_use.set_index("date")["price_usd"])
@@ -196,9 +197,7 @@ def calc_roi_from_csv(name: str, category: str, csv_path: str):
     If anything goes wrong (missing file/columns), roi_pct is None.
     """
     try:
-        df = pd.read_csv(csv_path)
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").reset_index(drop=True)
+        df = read_csv_cached(csv_path)  # use cached loader
 
         start = float(df["price_usd"].iloc[0])
         latest = float(df["price_usd"].iloc[-1])
@@ -242,11 +241,6 @@ with tab_top10:
                 except Exception as e:
                     st.write("read error:", str(e))
 
-    # Build DataFrame and clean
-    df_top = pd.DataFrame(results)
-    df_top = df_top.dropna(subset=["roi_pct"]).copy()
-
-    
     # Build DataFrame and clean
     df_top = pd.DataFrame(results)
     df_top = df_top.dropna(subset=["roi_pct"]).copy()
@@ -440,6 +434,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
