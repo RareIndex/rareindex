@@ -181,9 +181,18 @@ def show_category(title, csv_path):
             col2.metric("Latest Price", f"${end:,.0f}")
             col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
 
-        st.caption("Recent data points")
-        st.dataframe(df_use.tail(5), width="stretch")
+                # Recent data points (with item name + nicer formatting)
+        recent = df_use.tail(5).copy()
+        recent["Item"] = title
+        recent["Date"] = recent["date"].dt.strftime("%Y-%m-%d")
+        recent["Price ($)"] = recent["price_usd"].map(lambda v: f"${v:,.2f}")
 
+        st.caption("Recent data points")
+        st.dataframe(
+            recent[["Item", "Date", "Price ($)"]],
+            use_container_width=True
+        )
+       
     except FileNotFoundError:
         st.warning(f"Could not find {csv_path}. Make sure the file exists.")
     except Exception as e:
@@ -433,6 +442,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
