@@ -278,7 +278,7 @@ with tab_top10:
 
 with tab_cards:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
-    show_category("Lugia V Alt Art (Cards)", "cards.csv")
+    show_category("Card #011 (Cards)", "data/cards/cards_011.csv")
     render_news("Cards")
 
 with tab_watches:
@@ -421,6 +421,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
