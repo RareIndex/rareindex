@@ -200,7 +200,8 @@ with tab_top10:
 
     demo_items = [
         {"name": "Card #010 (Demo)", "category": "Cards", "csv": "cards/cards_010.csv"},
-        {"name": "Card #011 (Demo)", "category": "Cards", "csv": "cards/cards_011.csv"},  # <-- new
+        {"name": "Card #011 (Demo)", "category": "Cards", "csv": "cards/cards_011.csv"},
+        {"name": "Card #012 (Demo)", "category": "Cards", "csv": "cards/cards_012.csv"},
         {"name": "Rolex Submariner 116610LN", "category": "Watches", "csv": "watches.csv"},
         {"name": "LEGO 75290 Mos Eisley Cantina", "category": "Toys", "csv": "toys.csv"}
     ]
@@ -421,6 +422,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
