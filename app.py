@@ -163,13 +163,20 @@ def show_category(title, csv_path):
         with st.expander("Options", expanded=False):
             compare = st.checkbox("Compare to a stock index", value=False, key=f"cmp_{title}")
             market_choice = st.selectbox("Choose index", list(MARKETS.keys()), index=0, key=f"mkt_{title}")
-            jan_baseline = st.checkbox("Use Jan 2025 as baseline (if available)", value=True, key=f"jan_{title}")
+            range_choice = st.radio(
+                "Range",
+                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+                index=5,  # default to All
+                key=f"rng_{title}",
+                horizontal=True
+            )
 
         # ---- Choose the slice we use for plotting + metrics
-        if jan_baseline:
-            df_use = df[df["date"] >= pd.Timestamp("2025-01-01")].copy()
-            if df_use.empty:
-                df_use = df.copy()
+        df_use = slice_by_range(df, range_choice)
+        if df_use.empty:
+            st.warning("No data available for the selected range.")
+            return
+            
         else:
             df_use = df.copy()
 
@@ -504,6 +511,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
