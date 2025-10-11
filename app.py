@@ -120,7 +120,7 @@ def cached_fetch_news(feed_url: str, limit: int = 5):
     """Cached wrapper so we don't fetch feeds on every rerun."""
     return fetch_news(feed_url, limit)
 
-def render_news(category_name: str):
+    def render_news(category_name: str):
     st.markdown("<h5 style='margin-top:0.5rem;'>Trending News</h5>", unsafe_allow_html=True)
     feeds = FEEDS.get(category_name, [])
     combined = []
@@ -129,13 +129,11 @@ def render_news(category_name: str):
             combined.extend(cached_fetch_news(url, limit=3))
 
     # Deduplicate by title (very simple)
-    seen = set()
-    cleaned = []
+    seen, cleaned = set(), []
     for item in combined:
         t = item.get("title", "")
         if t and t not in seen:
-            seen.add(t)
-            cleaned.append(item)
+            seen.add(t); cleaned.append(item)
         if len(cleaned) >= 5:
             break
 
@@ -143,6 +141,7 @@ def render_news(category_name: str):
         st.caption("No news found right now.")
         return
 
+    # Single loop (remove the duplicate)
     for item in cleaned:
         pub = item.get("published", "")
         st.markdown(
@@ -200,8 +199,9 @@ def show_category(title, csv_path):
                 {title: item_index.values, market_choice: market_index},
                 index=df_use["date"]
             )
+            title_suffix = f" — {range_choice}"
             st.markdown(
-                f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>",
+                f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}{title_suffix}</h4>",
                 unsafe_allow_html=True
             )
             st.line_chart(plot_df)
@@ -214,7 +214,8 @@ def show_category(title, csv_path):
             market_last = float(market_index[-1])
             col4.metric("Outperformance vs Index", f"{(item_last - market_last):+.1f} pp")
         else:
-            st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend</h4>", unsafe_allow_html=True)
+            title_suffix = f" — {range_choice}"
+            st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend{title_suffix}</h4>", unsafe_allow_html=True)
             st.line_chart(df_use.set_index("date")["price_usd"])
 
             col1, col2, col3 = st.columns(3)
@@ -516,6 +517,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
