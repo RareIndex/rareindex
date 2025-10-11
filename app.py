@@ -128,7 +128,7 @@ def render_news(category_name: str):
         for url in feeds:
             combined.extend(cached_fetch_news(url, limit=3))
 
-        # Deduplicate by title (very simple)
+    # Deduplicate by title (very simple)
     seen = set()
     cleaned = []
     for item in combined:
@@ -142,6 +142,14 @@ def render_news(category_name: str):
     if not cleaned:
         st.caption("No news found right now.")
         return
+
+    for item in cleaned:
+        pub = item.get("published", "")
+        st.markdown(
+            f"- [{item.get('title','Untitled')}]({item.get('link','#')})  \n"
+            f"  <span style='color:#777;font-size:12px;'>{pub}</span>",
+            unsafe_allow_html=True,
+        )
 
     # Loop through cleaned items (properly indented)
     for item in cleaned:
@@ -176,14 +184,6 @@ def show_category(title, csv_path):
         if df_use.empty:
             st.warning("No data available for the selected range.")
             return
-            
-        else:
-            df_use = df.copy()
-
-        # Safety check — if df_use is still empty (e.g., bad CSV)
-        if df_use.empty:
-            st.warning("No data available for the selected baseline window.")
-            return
 
         # basic ROI on the chosen slice
         start = float(df_use["price_usd"].iloc[0])
@@ -196,9 +196,14 @@ def show_category(title, csv_path):
             market_ytd = MARKETS[market_choice]
             market_index = make_index_series(market_ytd, len(df_use))
 
-            plot_df = pd.DataFrame({title: item_index.values, market_choice: market_index},
-                                   index=df_use["date"])
-            st.markdown(f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>", unsafe_allow_html=True)
+            plot_df = pd.DataFrame(
+                {title: item_index.values, market_choice: market_index},
+                index=df_use["date"]
+            )
+            st.markdown(
+                f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}</h4>",
+                unsafe_allow_html=True
+            )
             st.line_chart(plot_df)
 
             col1, col2, col3, col4 = st.columns(4)
@@ -217,7 +222,7 @@ def show_category(title, csv_path):
             col2.metric("Latest Price", f"${end:,.0f}")
             col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
 
-                # Recent data points (with item name + nicer formatting)
+        # Recent data points (with item name + nicer formatting)
         recent = df_use.tail(5).copy()
         recent["Item"] = title
         recent["Date"] = recent["date"].dt.strftime("%Y-%m-%d")
@@ -228,7 +233,7 @@ def show_category(title, csv_path):
             recent[["Item", "Date", "Price ($)"]],
             use_container_width=True
         )
-       
+
     except FileNotFoundError:
         st.warning(f"Could not find {csv_path}. Make sure the file exists.")
     except Exception as e:
@@ -511,6 +516,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
