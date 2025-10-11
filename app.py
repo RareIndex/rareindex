@@ -117,10 +117,9 @@ FEEDS = {
 
 @st.cache_data(ttl=600)
 def cached_fetch_news(feed_url: str, limit: int = 5):
-    """Cached wrapper so we don't fetch feeds on every rerun."""
     return fetch_news(feed_url, limit)
 
-    def render_news(category_name: str):
+def render_news(category_name: str):
     st.markdown("<h5 style='margin-top:0.5rem;'>Trending News</h5>", unsafe_allow_html=True)
     feeds = FEEDS.get(category_name, [])
     combined = []
@@ -133,7 +132,8 @@ def cached_fetch_news(feed_url: str, limit: int = 5):
     for item in combined:
         t = item.get("title", "")
         if t and t not in seen:
-            seen.add(t); cleaned.append(item)
+            seen.add(t)
+            cleaned.append(item)
         if len(cleaned) >= 5:
             break
 
@@ -141,16 +141,7 @@ def cached_fetch_news(feed_url: str, limit: int = 5):
         st.caption("No news found right now.")
         return
 
-    # Single loop (remove the duplicate)
-    for item in cleaned:
-        pub = item.get("published", "")
-        st.markdown(
-            f"- [{item.get('title','Untitled')}]({item.get('link','#')})  \n"
-            f"  <span style='color:#777;font-size:12px;'>{pub}</span>",
-            unsafe_allow_html=True,
-        )
-
-    # Loop through cleaned items (properly indented)
+    # Single loop to render
     for item in cleaned:
         pub = item.get("published", "")
         st.markdown(
@@ -292,7 +283,7 @@ with tab_validator:
 with tab_top10:
     st.markdown("### 🏆 Top 10 ROI (Demo)")
 
-     # Auto-discover all card CSVs
+    # Auto-discover all card CSVs
     card_paths = sorted(glob.glob("data/cards/cards_*.csv"))
     card_items = []
     for p in card_paths:
@@ -517,6 +508,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
