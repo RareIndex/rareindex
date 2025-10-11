@@ -175,7 +175,10 @@ def show_category(title, csv_path):
             st.warning("No data available for the selected range.")
             return
 
-        # basic ROI on the chosen slice
+        # Add range suffix for chart titles
+        title_suffix = f" — {range_choice}"
+
+        # --- Basic ROI on the chosen slice
         start = float(df_use["price_usd"].iloc[0])
         end = float(df_use["price_usd"].iloc[-1])
         roi = ((end - start) / start) * 100.0
@@ -190,7 +193,7 @@ def show_category(title, csv_path):
                 {title: item_index.values, market_choice: market_index},
                 index=df_use["date"]
             )
-            title_suffix = f" — {range_choice}"
+
             st.markdown(
                 f"<h4 style='text-align:center;'>{title} — Index vs {market_choice}{title_suffix}</h4>",
                 unsafe_allow_html=True
@@ -204,9 +207,12 @@ def show_category(title, csv_path):
             item_last = float(item_index.iloc[-1])
             market_last = float(market_index[-1])
             col4.metric("Outperformance vs Index", f"{(item_last - market_last):+.1f} pp")
+
         else:
-            title_suffix = f" — {range_choice}"
-            st.markdown(f"<h4 style='text-align:center;'>{title} — Price Trend{title_suffix}</h4>", unsafe_allow_html=True)
+            st.markdown(
+                f"<h4 style='text-align:center;'>{title} — Price Trend{title_suffix}</h4>",
+                unsafe_allow_html=True
+            )
             st.line_chart(df_use.set_index("date")["price_usd"])
 
             col1, col2, col3 = st.columns(3)
@@ -214,7 +220,7 @@ def show_category(title, csv_path):
             col2.metric("Latest Price", f"${end:,.0f}")
             col3.metric(f"ROI since {df_use['date'].iloc[0].strftime('%b %Y')}", f"{roi:.1f}%")
 
-        # Recent data points (with item name + nicer formatting)
+        # --- Recent data points (with item name + nicer formatting)
         recent = df_use.tail(5).copy()
         recent["Item"] = title
         recent["Date"] = recent["date"].dt.strftime("%Y-%m-%d")
@@ -508,6 +514,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
