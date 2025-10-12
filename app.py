@@ -381,7 +381,7 @@ with tab_watches:
 
 with tab_toys:
     st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
-    show_category("LEGO 75290 Mos Eisley Cantina (Toys)", "toys.csv")
+    show_category("Top 50 ROI Toys (2025)", "data/toys/toys_top50.csv")
     render_news("Toys")
 
 with tab_live:
@@ -514,6 +514,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
