@@ -151,11 +151,17 @@ def render_news(category_name: str):
         )
 
 # --- Helper to load and show one category ---
-def show_category(title, csv_path):
+def show_category(title, source):
+    """
+    source: either a CSV path (str) or a pandas DataFrame with 'date' and 'price_usd'
+    """
     st.subheader(title)
     try:
-        # Cached CSV read
-        df = read_csv_cached(csv_path)
+        # Load from path or use provided DataFrame
+        if isinstance(source, str):
+            df = read_csv_cached(source)
+        else:
+            df = source.copy()
 
         # ---- Options
         with st.expander("Options", expanded=False):
@@ -207,7 +213,6 @@ def show_category(title, csv_path):
             item_last = float(item_index.iloc[-1])
             market_last = float(market_index[-1])
             col4.metric("Outperformance vs Index", f"{(item_last - market_last):+.1f} pp")
-
         else:
             st.markdown(
                 f"<h4 style='text-align:center;'>{title} — Price Trend{title_suffix}</h4>",
@@ -233,9 +238,9 @@ def show_category(title, csv_path):
         )
 
     except FileNotFoundError:
-        st.warning(f"Could not find {csv_path}. Make sure the file exists.")
+        st.warning(f"Could not find {source}. Make sure the file exists.")
     except Exception as e:
-        st.error(f"Error loading {csv_path}: {e}")
+        st.error(f"Error loading {source}: {e}")
 
 # --- Helper: compute ROI from a CSV (first vs latest) ---
 def calc_roi_from_csv(name: str, category: str, csv_path: str):
@@ -380,8 +385,24 @@ with tab_watches:
     render_news("Watches")
 
 with tab_toys:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a flagship retired LEGO set.</p>", unsafe_allow_html=True)
-    show_category("Top 50 ROI Toys (2025)", "data/toys/toys_top50.csv")
+    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 collectible toys by ROI (demo dataset).</p>", unsafe_allow_html=True)
+
+    # Load the full 50-toy dataset
+    df_all_toys = read_csv_cached("data/toys/toys_top50.csv")
+
+    # Require columns we expect
+    required_cols = {"item_name", "date", "price_usd"}
+    if not required_cols.issubset(set(df_all_toys.columns)):
+        st.error(f"'data/toys/toys_top50.csv' is missing required columns: {required_cols}")
+    else:
+        # Let the user pick a single toy to visualize
+        toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
+        choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
+
+        df_one = df_all_toys.loc[df_all_toys["item_name"] == choice, ["date", "price_usd"]].copy()
+        # Hand the filtered DataFrame to show_category (it now accepts a DataFrame)
+        show_category(choice + " (Toys)", df_one)
+
     render_news("Toys")
 
 with tab_live:
@@ -514,6 +535,7 @@ st.markdown("---")
 st.markdown("<p style='text-align: center; font-size:14px; color:#2E8B57;'>© 2025 The Rare Index · Demo Data Only</p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='mailto:david@therareindex.com'>Contact: david@therareindex.com</a></p>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-size:14px;'><a href='https://forms.gle/KxufuFLcEVZD6qtD8' target='_blank'>Subscribe for updates</a></p>", unsafe_allow_html=True)
+
 
 
 
