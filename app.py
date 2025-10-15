@@ -150,7 +150,7 @@ def render_news(category_name: str):
             unsafe_allow_html=True,
         )
 
-# --- Helper to load and show one category ---
+# --- Helper to load and one category ---
 def show_category(title, source):
     """
     source: either a CSV path (str) or a pandas DataFrame with 'date' and 'price_usd'
@@ -234,7 +234,7 @@ def show_category(title, source):
         st.caption("Recent data points")
         st.dataframe(
             recent[["Item", "Date", "Price ($)"]],
-            use_container_width=True
+            width="stretch"
         )
 
     except FileNotFoundError:
@@ -287,8 +287,8 @@ with tab_validator:
         if result.get("df") is not None:
             st.markdown("**Preview (first & last 5 rows)**")
             df_clean = result["df"]
-            st.dataframe(df_clean.head(5), use_container_width=True)
-            st.dataframe(df_clean.tail(5), use_container_width=True)
+            st.dataframe(df_clean.head(5), width="stretch"
+            st.dataframe(df_clean.tail(5), width="stretch"
             
 # --- Top 10 ROI (Demo) ---
 with tab_top10:
@@ -342,7 +342,7 @@ with tab_top10:
         # Show table
         st.dataframe(
             df_top[["name", "category", "Start ($)", "Latest ($)", "ROI (%)"]],
-            use_container_width=True
+            width="stretch"
         )
 
         # Quick metrics
@@ -398,6 +398,32 @@ with tab_toys:
         # Let the user pick a single toy to visualize
         toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
         choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
+        # Optional: show a quick metadata line for the selected toy
+meta_cols = ["release_year", "retirement_year", "condition", "grade", "category_subtype", "original_retail", "source_platform"]
+
+# Safely grab the first row for the selected item (in case of any duplicates)
+meta_df = df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols].head(1)
+
+if not meta_df.empty:
+    meta_row = meta_df.iloc[0]
+    # Some columns are numeric; cast carefully
+    release_year = int(meta_row["release_year"]) if pd.notnull(meta_row["release_year"]) else "—"
+    retire_year  = int(meta_row["retirement_year"]) if pd.notnull(meta_row["retirement_year"]) else "—"
+    condition    = str(meta_row["condition"]) if pd.notnull(meta_row["condition"]) else "—"
+    grade        = str(meta_row["grade"]) if pd.notnull(meta_row["grade"]) else "—"
+    subtype      = str(meta_row["category_subtype"]) if pd.notnull(meta_row["category_subtype"]) else "—"
+    msrp         = f"${float(meta_row['original_retail']):,.2f}" if pd.notnull(meta_row["original_retail"]) else "—"
+    source       = str(meta_row["source_platform"]) if pd.notnull(meta_row["source_platform"]) else "—"
+
+    st.caption(
+        f"**Release:** {release_year}  •  "
+        f"**Retired:** {retire_year}  •  "
+        f"**Condition:** {condition}  •  "
+        f"**Grade:** {grade}  •  "
+        f"**Type:** {subtype}  •  "
+        f"**MSRP:** {msrp}  •  "
+        f"**Source:** {source}"
+    )
 
         df_one = df_all_toys.loc[df_all_toys["item_name"] == choice, ["date", "price_usd"]].copy()
         # Hand the filtered DataFrame to show_category (it now accepts a DataFrame)
@@ -465,7 +491,7 @@ with tab_live:
 
         st.dataframe(
             df_display[["title","price ($)","currency","listingType","condition","category","viewItemURL"]],
-            use_container_width=True
+            width="stretch"
         )
 
         # Divider
