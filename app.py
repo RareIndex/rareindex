@@ -404,48 +404,46 @@ with tab_toys:
             # Let the user pick a single toy to visualize
             toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
             choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
-            
-# --- Show metadata for the selected toy ---
-meta_cols = [
-    "release_year",
-    "retirement_year",
-    "condition",
-    "grade",
-    "category_subtype",
-    "original_retail",
-    "source_platform",
-]
-meta_row = (
-    df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols]
-    .dropna()
-    .head(1)
-)
 
-if not meta_row.empty:
-    m = meta_row.iloc[0]
-    retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
-    # Simple pill/badge-style row
-    st.markdown(
-        " ".join([
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(m['release_year']) if pd.notnull(m['release_year']) else '—'}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(m['retirement_year']) if pd.notnull(m['retirement_year']) else '—'}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {m['condition'] if pd.notnull(m['condition']) else '—'}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {m['grade'] if pd.notnull(m['grade']) else '—'}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {m['category_subtype'] if pd.notnull(m['category_subtype']) else '—'}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
-            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {m['source_platform'] if pd.notnull(m['source_platform']) else '—'}</span>",
-        ]),
-        unsafe_allow_html=True
-    )
-else:
-    st.caption("No metadata found for this item.")
+        # --- Show metadata for the selected toy ---
+        meta_cols = [
+            "release_year",
+            "retirement_year",
+            "condition",
+            "grade",
+            "category_subtype",
+            "original_retail",
+            "source_platform",
+        ]
+        meta_row = (
+            df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols]
+            .dropna()
+            .head(1)
+        )
 
-            # Filter to the chosen item and pass a tidy df to show_category()
-            df_one = df_all_toys.loc[
-                df_all_toys["item_name"] == choice, ["date", "price_usd"]
-            ].copy()
+        if not meta_row.empty:
+            m = meta_row.iloc[0]
+            retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+            st.markdown(
+                " ".join([
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(m['release_year']) if pd.notnull(m['release_year']) else '—'}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(m['retirement_year']) if pd.notnull(m['retirement_year']) else '—'}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {m['condition'] if pd.notnull(m['condition']) else '—'}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {m['grade'] if pd.notnull(m['grade']) else '—'}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {m['category_subtype'] if pd.notnull(m['category_subtype']) else '—'}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {m['source_platform'] if pd.notnull(m['source_platform']) else '—'}</span>",
+                ]),
+                unsafe_allow_html=True
+            )
+        else:
+            st.caption("No metadata found for this item.")
 
-            show_category(f"{choice} (Toys)", df_one)
+        # Filter to the chosen item and pass a tidy df to show_category()
+        df_one = df_all_toys.loc[
+            df_all_toys["item_name"] == choice, ["date", "price_usd"]
+        ].copy()
+        show_category(f"{choice} (Toys)", df_one)
 
     render_news("Toys")
 
