@@ -504,47 +504,86 @@ with tab_toys:
             ].copy()
             show_category(f"{choice} (Toys)", df_one)
 
-            # ---- ROI Leaderboard (Top 50 toys) ----
-            st.markdown("### 🧮 ROI Leaderboard")
+            # --- ROI Leaderboard (Top 50 toys) ---
+    st.markdown("### 🧮 ROI Leaderboard")
 
-            lb_period = st.radio(
-                "Window",
-                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
-                index=2,  # default 1Y
-                horizontal=True,
-                key="toys_leaderboard_window",
-            )
+    # Window selector
+    lb_period = st.radio(
+        "Window",
+        ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+        index=2,  # default 1Y
+        horizontal=True,
+        key="toys_leaderboard_window",
+    )
 
-            df_lb = build_toy_leaderboard(df_all_toys, lb_period)
+    # Build raw leaderboard (numeric)
+    df_lb = build_toy_leaderboard(df_all_toys, lb_period)
 
-            # Optional quick search
-            q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
-            if q.strip():
-                df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
+    # ---- Filters (Subtype / Condition / Grade / Release Year) ----
+    # Build option lists from the full toys dataset (more complete than df_lb)
+    subtypes = sorted(df_all_toys["category_subtype"].dropna().astype(str).unique().tolist())
+    conditions = sorted(df_all_toys["condition"].dropna().astype(str).unique().tolist())
+    grades = sorted(df_all_toys["grade"].dropna().astype(str).unique().tolist())
+    years_all = df_all_toys["release_year"].dropna().astype(int)
+    yr_min, yr_max = (int(years_all.min()), int(years_all.max())) if not years_all.empty else (1990, 2025)
 
-            if df_lb.empty:
-                st.info("No leaderboard rows for the selected window yet.")
-            else:
-                # Pretty display columns
-                df_show = df_lb.copy()
-                for col in ["Start ($)", "Latest ($)"]:
-                    df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-                for col in ["ROI (%)", "CAGR (%)"]:
-                    df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+    with st.expander("Filters", expanded=False):
+        sel_subtypes = st.multiselect("Subtype", options=subtypes, default=[], key="lb_f_subtype")
+        sel_conditions = st.multiselect("Condition", options=conditions, default=[], key="lb_f_condition")
+        sel_grades = st.multiselect("Grade", options=grades, default=[], key="lb_f_grade")
+        yr_range = st.slider("Release year range", min_value=yr_min, max_value=yr_max, value=(yr_min, yr_max), step=1, key="lb_f_years")
+        top_k = st.slider("Show top N", min_value=10, max_value=50, value=25, step=5, key="lb_topk")
 
-                st.dataframe(
-                    df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
-                    width="stretch",
-                )
+    # Apply filters to leaderboard (map to df_lb column names)
+    if sel_subtypes:
+        df_lb = df_lb[df_lb["Subtype"].isin(sel_subtypes)].copy()
+    if sel_conditions:
+        df_lb = df_lb[df_lb["Condition"].isin(sel_conditions)].copy()
+    if sel_grades:
+        df_lb = df_lb[df_lb["Grade"].isin(sel_grades)].copy()
+    df_lb = df_lb[df_lb["Release Year"].between(yr_range[0], yr_range[1], inclusive="both") | df_lb["Release Year"].isna()].copy()
 
-                # Download raw (numeric) leaderboard as CSV
-                csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "Download leaderboard (CSV)",
-                    data=csv_bytes,
-                    file_name=f"toys_leaderboard_{lb_period}.csv",
-                    mime="text/csv",
-                )
+    # ---- Sorting controls ----
+    sort_col = st.selectbox(
+        "Sort by",
+        ["ROI (%)", "CAGR (%)", "Latest ($)", "Start ($)"],
+        index=0,
+        key="lb_sort_col",
+    )
+    sort_dir = st.radio("Order", ["Desc", "Asc"], index=0, horizontal=True, key="lb_sort_dir")
+    df_lb = df_lb.sort_values(sort_col, ascending=(sort_dir == "Asc"), na_position="last")
+
+    # Limit to top N
+    df_lb = df_lb.head(top_k).reset_index(drop=True)
+
+    # Optional quick search by name
+    q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
+    if q.strip():
+        df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
+
+    if df_lb.empty:
+        st.info("No leaderboard rows for the selected window/filters yet.")
+    else:
+        # Pretty display columns
+        df_show = df_lb.copy()
+        for col in ["Start ($)", "Latest ($)"]:
+            df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+        for col in ["ROI (%)", "CAGR (%)"]:
+            df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+        st.dataframe(
+            df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+            width="stretch",
+        )
+
+        # Download raw (numeric) leaderboard as CSV
+        csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download leaderboard (CSV)",
+            data=csv_bytes,
+            file_name=f"toys_leaderboard_{lb_period}.csv",
+            mime="text/csv",
+        )
 
     # News stays at the end of the tab
     render_news("Toys")
