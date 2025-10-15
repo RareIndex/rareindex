@@ -460,91 +460,91 @@ with tab_toys:
         if not required_cols.issubset(set(df_all_toys.columns)):
             st.error(f"'data/toys/toys_top50.csv' is missing required columns: {required_cols}")
         else:
-            # Let the user pick a single toy to visualize
+            # ---- Single-item chart section ----
             toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
             choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
 
-        # --- Show metadata for the selected toy ---
-        meta_cols = [
-            "release_year",
-            "retirement_year",
-            "condition",
-            "grade",
-            "category_subtype",
-            "original_retail",
-            "source_platform",
-        ]
-        meta_row = (
-            df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols]
-            .dropna()
-            .head(1)
-        )
-
-        if not meta_row.empty:
-            m = meta_row.iloc[0]
-            retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
-            st.markdown(
-                " ".join([
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(m['release_year']) if pd.notnull(m['release_year']) else '—'}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(m['retirement_year']) if pd.notnull(m['retirement_year']) else '—'}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {m['condition'] if pd.notnull(m['condition']) else '—'}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {m['grade'] if pd.notnull(m['grade']) else '—'}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {m['category_subtype'] if pd.notnull(m['category_subtype']) else '—'}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
-                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {m['source_platform'] if pd.notnull(m['source_platform']) else '—'}</span>",
-                ]),
-                unsafe_allow_html=True
+            # Show metadata for the selected toy
+            meta_cols = [
+                "release_year",
+                "retirement_year",
+                "condition",
+                "grade",
+                "category_subtype",
+                "original_retail",
+                "source_platform",
+            ]
+            meta_row = (
+                df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols]
+                .dropna()
+                .head(1)
             )
-        else:
-            st.caption("No metadata found for this item.")
 
-        # Filter to the chosen item and pass a tidy df to show_category()
-        df_one = df_all_toys.loc[
-            df_all_toys["item_name"] == choice, ["date", "price_usd"]
-        ].copy()
-        show_category(f"{choice} (Toys)", df_one)
+            if not meta_row.empty:
+                m = meta_row.iloc[0]
+                retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+                st.markdown(
+                    " ".join([
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(m['release_year']) if pd.notnull(m['release_year']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(m['retirement_year']) if pd.notnull(m['retirement_year']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {m['condition'] if pd.notnull(m['condition']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {m['grade'] if pd.notnull(m['grade']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {m['category_subtype'] if pd.notnull(m['category_subtype']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {m['source_platform'] if pd.notnull(m['source_platform']) else '—'}</span>",
+                    ]),
+                    unsafe_allow_html=True
+                )
+            else:
+                st.caption("No metadata found for this item.")
 
-    # --- ROI Leaderboard (Top 50 toys) ---
-    st.markdown("### 🧮 ROI Leaderboard")
+            # Filter to the chosen item and pass a tidy df to show_category()
+            df_one = df_all_toys.loc[
+                df_all_toys["item_name"] == choice, ["date", "price_usd"]
+            ].copy()
+            show_category(f"{choice} (Toys)", df_one)
 
-    lb_period = st.radio(
-        "Window",
-        ["3M", "6M", "1Y", "2Y", "YTD", "All"],
-        index=2,  # default 1Y
-        horizontal=True,
-        key="toys_leaderboard_window",
-    )
+            # ---- ROI Leaderboard (Top 50 toys) ----
+            st.markdown("### 🧮 ROI Leaderboard")
 
-    df_lb = build_toy_leaderboard(df_all_toys, lb_period)
+            lb_period = st.radio(
+                "Window",
+                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+                index=2,  # default 1Y
+                horizontal=True,
+                key="toys_leaderboard_window",
+            )
 
-    # Optional quick search
-    q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
-    if q.strip():
-        df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
+            df_lb = build_toy_leaderboard(df_all_toys, lb_period)
 
-    if df_lb.empty:
-        st.info("No leaderboard rows for the selected window yet.")
-    else:
-        # Pretty display columns
-        df_show = df_lb.copy()
-        for col in ["Start ($)", "Latest ($)"]:
-            df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-        for col in ["ROI (%)", "CAGR (%)"]:
-            df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+            # Optional quick search
+            q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
+            if q.strip():
+                df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
 
-        st.dataframe(
-            df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
-            width="stretch",
-        )
+            if df_lb.empty:
+                st.info("No leaderboard rows for the selected window yet.")
+            else:
+                # Pretty display columns
+                df_show = df_lb.copy()
+                for col in ["Start ($)", "Latest ($)"]:
+                    df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                for col in ["ROI (%)", "CAGR (%)"]:
+                    df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
 
-        # Download raw (numeric) leaderboard as CSV
-        csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download leaderboard (CSV)",
-            data=csv_bytes,
-            file_name=f"toys_leaderboard_{lb_period}.csv",
-            mime="text/csv",
-        )
+                st.dataframe(
+                    df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch",
+                )
+
+                # Download raw (numeric) leaderboard as CSV
+                csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "Download leaderboard (CSV)",
+                    data=csv_bytes,
+                    file_name=f"toys_leaderboard_{lb_period}.csv",
+                    mime="text/csv",
+                )
 
     # News stays at the end of the tab
     render_news("Toys")
