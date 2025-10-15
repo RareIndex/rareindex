@@ -89,6 +89,65 @@ def slice_by_range(df: pd.DataFrame, range_key: str) -> pd.DataFrame:
     # Fallback
     return df.copy()
 
+# --- Helper: build leaderboard for toys across a chosen window ---
+def build_toy_leaderboard(df_all: pd.DataFrame, period: str) -> pd.DataFrame:
+    """
+    period: one of '3M','6M','1Y','2Y','YTD','All'
+    Returns a DataFrame with per-item ROI (and CAGR when possible) for the chosen window.
+    """
+    rows = []
+    # Ensure types
+    df_all = df_all.copy()
+    df_all["date"] = pd.to_datetime(df_all["date"])
+    df_all = df_all.sort_values(["item_name", "date"])
+
+    for name, g in df_all.groupby("item_name", sort=True):
+        g = g.copy().sort_values("date")
+
+        # keep some metadata from the latest row (nice for display)
+        meta = g.iloc[-1]
+        subtype = str(meta.get("category_subtype", "")) or "—"
+        cond = str(meta.get("condition", "")) or "—"
+        grade = str(meta.get("grade", "")) or "—"
+        rel_year = meta.get("release_year", None)
+
+        g_use = slice_by_range(g, period)
+        if len(g_use) < 2:
+            continue
+
+        start_price = float(g_use["price_usd"].iloc[0])
+        latest_price = float(g_use["price_usd"].iloc[-1])
+        if start_price <= 0:
+            continue
+
+        roi_pct = ((latest_price - start_price) / start_price) * 100.0
+
+        # CAGR if we have a real span
+        span_years = (g_use["date"].iloc[-1] - g_use["date"].iloc[0]).days / 365.25
+        if span_years > 0:
+            cagr_pct = ((latest_price / start_price) ** (1.0 / span_years) - 1.0) * 100.0
+        else:
+            cagr_pct = None
+
+        rows.append({
+            "Item": name,
+            "Subtype": subtype,
+            "Condition": cond,
+            "Grade": grade,
+            "Release Year": int(rel_year) if pd.notnull(rel_year) else None,
+            "Start ($)": start_price,
+            "Latest ($)": latest_price,
+            "ROI (%)": roi_pct,
+            "CAGR (%)": cagr_pct,
+        })
+
+    if not rows:
+        return pd.DataFrame(columns=["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"])
+
+    out = pd.DataFrame(rows)
+    out = out.sort_values("ROI (%)", ascending=False).reset_index(drop=True)
+    return out
+
 # Fixed demo YTDs for 2025 (tweak later if you want)
 MARKETS = {
     "S&P 500 (~+12% YTD 2025)": 0.12,
