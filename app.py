@@ -385,49 +385,32 @@ with tab_watches:
     render_news("Watches")
 
 with tab_toys:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 collectible toys by ROI (demo dataset).</p>", unsafe_allow_html=True)
-
-    # Load the full 50-toy dataset
-    df_all_toys = read_csv_cached("data/toys/toys_top50.csv")
-
-    # Require columns we expect
-    required_cols = {"item_name", "date", "price_usd"}
-    if not required_cols.issubset(set(df_all_toys.columns)):
-        st.error(f"'data/toys/toys_top50.csv' is missing required columns: {required_cols}")
-    else:
-        # Let the user pick a single toy to visualize
-        toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
-        choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
-        # Optional: show a quick metadata line for the selected toy
-meta_cols = ["release_year", "retirement_year", "condition", "grade", "category_subtype", "original_retail", "source_platform"]
-
-# Safely grab the first row for the selected item (in case of any duplicates)
-meta_df = df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols].head(1)
-
-if not meta_df.empty:
-    meta_row = meta_df.iloc[0]
-    # Some columns are numeric; cast carefully
-    release_year = int(meta_row["release_year"]) if pd.notnull(meta_row["release_year"]) else "—"
-    retire_year  = int(meta_row["retirement_year"]) if pd.notnull(meta_row["retirement_year"]) else "—"
-    condition    = str(meta_row["condition"]) if pd.notnull(meta_row["condition"]) else "—"
-    grade        = str(meta_row["grade"]) if pd.notnull(meta_row["grade"]) else "—"
-    subtype      = str(meta_row["category_subtype"]) if pd.notnull(meta_row["category_subtype"]) else "—"
-    msrp         = f"${float(meta_row['original_retail']):,.2f}" if pd.notnull(meta_row["original_retail"]) else "—"
-    source       = str(meta_row["source_platform"]) if pd.notnull(meta_row["source_platform"]) else "—"
-
-    st.caption(
-        f"**Release:** {release_year}  •  "
-        f"**Retired:** {retire_year}  •  "
-        f"**Condition:** {condition}  •  "
-        f"**Grade:** {grade}  •  "
-        f"**Type:** {subtype}  •  "
-        f"**MSRP:** {msrp}  •  "
-        f"**Source:** {source}"
+    st.markdown(
+        "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 collectible toys by ROI (demo dataset).</p>",
+        unsafe_allow_html=True
     )
 
-        df_one = df_all_toys.loc[df_all_toys["item_name"] == choice, ["date", "price_usd"]].copy()
-        # Hand the filtered DataFrame to show_category (it now accepts a DataFrame)
-        show_category(choice + " (Toys)", df_one)
+    try:
+        # Load the full 50-toy dataset
+        df_all_toys = read_csv_cached("data/toys/toys_top50.csv")
+    except FileNotFoundError:
+        st.error("Missing file: data/toys/toys_top50.csv — make sure it’s committed and pushed.")
+    else:
+        # Require columns we expect
+        required_cols = {"item_name", "date", "price_usd"}
+        if not required_cols.issubset(set(df_all_toys.columns)):
+            st.error(f"'data/toys/toys_top50.csv' is missing required columns: {required_cols}")
+        else:
+            # Let the user pick a single toy to visualize
+            toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
+            choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
+
+            # Filter to the chosen item and pass a tidy df to show_category()
+            df_one = df_all_toys.loc[
+                df_all_toys["item_name"] == choice, ["date", "price_usd"]
+            ].copy()
+
+            show_category(f"{choice} (Toys)", df_one)
 
     render_news("Toys")
 
