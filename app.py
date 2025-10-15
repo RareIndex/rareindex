@@ -504,6 +504,49 @@ with tab_toys:
         ].copy()
         show_category(f"{choice} (Toys)", df_one)
 
+    # --- ROI Leaderboard (Top 50 toys) ---
+    st.markdown("### 🧮 ROI Leaderboard")
+
+    lb_period = st.radio(
+        "Window",
+        ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+        index=2,  # default 1Y
+        horizontal=True,
+        key="toys_leaderboard_window",
+    )
+
+    df_lb = build_toy_leaderboard(df_all_toys, lb_period)
+
+    # Optional quick search
+    q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
+    if q.strip():
+        df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
+
+    if df_lb.empty:
+        st.info("No leaderboard rows for the selected window yet.")
+    else:
+        # Pretty display columns
+        df_show = df_lb.copy()
+        for col in ["Start ($)", "Latest ($)"]:
+            df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+        for col in ["ROI (%)", "CAGR (%)"]:
+            df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+        st.dataframe(
+            df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+            width="stretch",
+        )
+
+        # Download raw (numeric) leaderboard as CSV
+        csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download leaderboard (CSV)",
+            data=csv_bytes,
+            file_name=f"toys_leaderboard_{lb_period}.csv",
+            mime="text/csv",
+        )
+
+    # News stays at the end of the tab
     render_news("Toys")
 
 with tab_live:
