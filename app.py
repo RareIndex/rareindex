@@ -287,9 +287,9 @@ with tab_validator:
         if result.get("df") is not None:
             st.markdown("**Preview (first & last 5 rows)**")
             df_clean = result["df"]
-            st.dataframe(df_clean.head(5), width="stretch"
-            st.dataframe(df_clean.tail(5), width="stretch"
-            
+            st.dataframe(df_clean.head(5), width="stretch")
+            st.dataframe(df_clean.tail(5), width="stretch")
+
 # --- Top 10 ROI (Demo) ---
 with tab_top10:
     st.markdown("### 🏆 Top 10 ROI (Demo)")
