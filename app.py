@@ -504,7 +504,7 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
     df_one = df_all.loc[df_all["item_name"] == choice, ["date", "price_usd"]].copy()
     show_item_chart(f"{choice} ({news_key})", df_one)
 
-    # Per-item CSV download (raw)
+     # Per-item CSV download (raw)
     st.download_button(
         label="Download selected item (CSV)",
         data=df_one.to_csv(index=False).encode("utf-8"),
@@ -512,6 +512,24 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
         mime="text/csv",
     )
 
+    # ---------- Export All (ZIP) ----------
+    zip_bytes = build_export_zip(
+        category_slug=slugify(news_key),
+        win_key=win_key,
+        df_all=df_all,
+        df_lb_raw=df_lb,
+        top3_raw=top3_raw,
+        bot3_raw=bot3_raw,
+        choice=choice,
+        df_one_raw=df_one
+    )
+    st.download_button(
+        "Export All (ZIP)",
+        data=zip_bytes,
+        file_name=f"{slugify(news_key)}_export_{slugify(win_key)}.zip",
+        mime="application/zip",
+    )
+ 
     # -------------- News --------------
     render_news(news_key)
 
