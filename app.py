@@ -342,7 +342,7 @@ def render_category_tab(cat_label: str, csv_path: str, news_key: str, index_titl
             f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
             f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {val('source_platform')}</span>",
         ]), unsafe_allow_html=True)
-     else:
+    else:
         st.caption("No metadata found for this item.")
 
     # Filter the selected item and plot
@@ -350,17 +350,16 @@ def render_category_tab(cat_label: str, csv_path: str, news_key: str, index_titl
     show_item_chart(f"{choice} ({news_key})", df_one)
 
     # Per-item CSV download (place directly after the chart)
-    # If you don't have `category_name` in scope, hardcode it: e.g., "toys" / "watches" / "cards"
+    # If you don't have category_name in scope, hardcode it: e.g., "toys" / "watches" / "cards"
     st.download_button(
         label="Download selected item (CSV)",
         data=df_one.to_csv(index=False).encode("utf-8"),
-        file_name=f"{slugify(category_name)}_{slugify(choice)}.csv",  # or slugify("toys")
+        file_name=f"{slugify('toys')}_{slugify(choice)}.csv",  # change 'toys' per tab
         mime="text/csv",
     )
 
     # -------------- News --------------
-
-    render_news(news_key)
+    render_news("Toys")
 
 # -------------------------
 # Tabs
