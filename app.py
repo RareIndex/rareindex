@@ -459,8 +459,8 @@ with tab_watches:
             watch_names = sorted(df_all_watches["item_name"].dropna().unique().tolist())
             choice_w = st.selectbox("Choose a watch", watch_names, index=0, key="watch_picker")
 
-            # --- Show metadata for the selected watch (badges) ---
-            meta_cols_w = [
+            # --- Show metadata for the selected watch ---
+            meta_cols = [
                 "release_year",
                 "retirement_year",
                 "condition",
@@ -469,29 +469,45 @@ with tab_watches:
                 "original_retail",
                 "source_platform",
             ]
-            meta_row_w = (
-                df_all_watches.loc[df_all_watches["item_name"] == choice_w, meta_cols_w]
-                .dropna()
-                .head(1)
-            )
 
-            if not meta_row_w.empty:
-                mw = meta_row_w.iloc[0]
-                retail_str_w = f"${float(mw['original_retail']):,.2f}" if pd.notnull(mw["original_retail"]) else "—"
-                st.markdown(
-                    " ".join([
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(mw['release_year']) if pd.notnull(mw['release_year']) else '—'}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(mw['retirement_year']) if pd.notnull(mw['retirement_year']) else '—'}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {mw['condition'] if pd.notnull(mw['condition']) else '—'}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {mw['grade'] if pd.notnull(mw['grade']) else '—'}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {mw['category_subtype'] if pd.notnull(mw['category_subtype']) else '—'}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str_w}</span>",
-                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {mw['source_platform'] if pd.notnull(mw['source_platform']) else '—'}</span>",
-                    ]),
-                    unsafe_allow_html=True
-                )
+            # Normalize strings to avoid mismatches
+            for c in ["item_name", "condition", "grade", "category_subtype", "source_platform"]:
+                if c in df_all_watches.columns:
+                    df_all_watches[c] = df_all_watches[c].astype(str).str.strip()
+
+            missing = [c for c in meta_cols if c not in df_all_watches.columns]
+            if missing:
+                st.warning(f"Missing metadata columns: {missing}")
             else:
-                st.caption("No metadata found for this item.")
+                meta_row = (
+                    df_all_watches.loc[df_all_watches["item_name"] == choice_w, meta_cols]
+                    .head(1)  # no dropna() so we still show partial badges
+                )
+
+                if not meta_row.empty:
+                    m = meta_row.iloc[0]
+                    rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
+                    ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
+                    cond = m["condition"] if pd.notnull(m["condition"]) else "—"
+                    grade = m["grade"] if pd.notnull(m["grade"]) else "—"
+                    subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
+                    retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+                    source = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
+
+                    st.markdown(
+                        " ".join([
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {source}</span>",
+                        ]),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.caption("No metadata found for this item.")
 
             # Filter to the chosen watch and pass a tidy df to show_category()
             df_one_w = df_all_watches.loc[
@@ -510,7 +526,7 @@ with tab_watches:
                 key="watches_leaderboard_window",
             )
 
-            # Re-use the same leaderboard builder (it works on item_name/date/price_usd + metadata)
+            # Re-use the generic leaderboard builder (works for any item_name/date/price_usd dataset)
             df_lb_w = build_toy_leaderboard(df_all_watches, lb_period_w)
 
             # Optional quick search
@@ -521,7 +537,6 @@ with tab_watches:
             if df_lb_w.empty:
                 st.info("No leaderboard rows for the selected window yet.")
             else:
-                # Pretty display columns
                 df_show_w = df_lb_w.copy()
                 for col in ["Start ($)", "Latest ($)"]:
                     df_show_w[col] = df_show_w[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
@@ -544,7 +559,7 @@ with tab_watches:
 
     # News stays at the end of the tab
     render_news("Watches")
-
+    
 with tab_toys:
     st.markdown(
         "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 collectible toys by ROI (demo dataset).</p>",
