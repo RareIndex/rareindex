@@ -6,90 +6,101 @@ import numpy as np
 OUT_DIR = "data/cards"
 OUT_CSV = os.path.join(OUT_DIR, "cards_top50.csv")
 
-# name, release_year, retirement_year, condition, grade, subtype, retail, source
+# 50 named items across Pokémon / MTG / Yu-Gi-Oh! / Sports TCG
 ITEMS = [
-    # Pokémon (mix of graded and raw)
-    ("Pokémon Lugia V Alt Art (SWSH Lugia V #186)", 2022, 2023, "Graded", "PSA 10", "Pokemon TCG", 99.99, "eBay"),
-    ("Pokémon Charizard Base Set Holo", 1999, 2000, "Graded", "PSA 9", "Pokemon TCG", 99.99, "PWCC"),
-    ("Pokémon Umbreon Gold Star", 2005, 2006, "Graded", "BGS 9.5", "Pokemon TCG", 99.99, "Goldin"),
-    ("Pokémon Pikachu Promo 20th Anniv.", 2016, 2017, "Raw", "NM", "Pokemon TCG", 9.99, "eBay"),
-    ("Pokémon Evolving Skies Booster Box", 2021, 2022, "Sealed", "Factory", "Pokemon TCG", 143.00, "StockX"),
-    ("Pokémon 151 Booster Box JP", 2023, 2024, "Sealed", "Factory", "Pokemon TCG", 85.00, "Mercari JP"),
-    ("Pokémon Crown Zenith ETB", 2023, 2024, "Sealed", "Factory", "Pokemon TCG", 49.99, "TCGplayer"),
-    ("Pokémon Charizard UPC (SWSH)", 2022, 2023, "Sealed", "Factory", "Pokemon TCG", 119.99, "Amazon"),
-    ("Pokémon Neo Genesis Typhlosion 17 Holo", 2000, 2001, "Graded", "PSA 9", "Pokemon TCG", 99.99, "eBay"),
-    ("Pokémon Japanese Promo Mario Pikachu", 2016, 2017, "Graded", "PSA 10", "Pokemon TCG", 25.00, "Yahoo JP"),
+    # name, release_year, retirement_year, condition, grade, subtype, orig_retail, source
+    ("Pokémon Charizard Base Set Holo PSA 9", 1999, 2000, "Graded", "PSA 9", "Pokemon", 3.99, "eBay"),
+    ("Pokémon Lugia Neo Genesis 1st Ed PSA 9", 2000, 2001, "Graded", "PSA 9", "Pokemon", 3.99, "PWCC"),
+    ("Pokémon Umbreon Gold Star PSA 9", 2005, 2007, "Graded", "PSA 9", "Pokemon", 3.99, "Goldin"),
+    ("Pokémon Pikachu Illustrator Promo (Reprint) PSA 8", 2023, 2023, "Graded", "PSA 8", "Pokemon", 0.00, "eBay"),
+    ("Pokémon Charizard UPC Metal PSA 10", 2021, 2022, "Graded", "PSA 10", "Pokemon", 0.00, "eBay"),
+    ("Pokémon 151 Charizard SAR PSA 10", 2023, 2024, "Graded", "PSA 10", "Pokemon", 0.00, "TCGPlayer"),
+    ("Pokémon Celebrations Charizard PSA 10", 2021, 2022, "Graded", "PSA 10", "Pokemon", 0.00, "eBay"),
+    ("Pokémon Evolving Skies Umbreon VMAX Alt PSA 10", 2021, 2023, "Graded", "PSA 10", "Pokemon", 0.00, "Goldin"),
+    ("Pokémon Crown Zenith Mewtwo VSTAR SAR PSA 10", 2023, 2024, "Graded", "PSA 10", "Pokemon", 0.00, "eBay"),
+    ("Pokémon Skyridge Crystal Charizard PSA 8", 2003, 2004, "Graded", "PSA 8", "Pokemon", 3.99, "PWCC"),
 
-    # Magic: The Gathering
-    ("MTG Black Lotus (Unlimited)", 1993, 1994, "Graded", "BGS 8.5", "Magic", 100.00, "Heritage"),
-    ("MTG Mox Sapphire (Unlimited)", 1993, 1994, "Graded", "PSA 8", "Magic", 50.00, "Heritage"),
-    ("MTG Underground Sea (Revised)", 1994, 1994, "Graded", "PSA 9", "Magic", 7.00, "eBay"),
-    ("MTG Modern Horizons 2 Booster Box", 2021, 2022, "Sealed", "Factory", "Magic", 250.00, "TCGplayer"),
-    ("MTG Commander Masters Collector Box", 2023, 2024, "Sealed", "Factory", "Magic", 250.00, "TCGplayer"),
+    ("MTG Black Lotus (Unlimited) BGS 9", 1993, 1994, "Graded", "BGS 9", "MTG", 2.45, "PWCC"),
+    ("MTG Mox Sapphire (Unlimited) BGS 8.5", 1993, 1994, "Graded", "BGS 8.5", "MTG", 2.45, "PWCC"),
+    ("MTG Dual Land Underground Sea (Revised) PSA 9", 1994, 1995, "Graded", "PSA 9", "MTG", 3.95, "eBay"),
+    ("MTG Time Walk (Unlimited) BGS 8.5", 1993, 1994, "Graded", "BGS 8.5", "MTG", 2.45, "Goldin"),
+    ("MTG Gaea's Cradle (Urza’s Saga) PSA 9", 1998, 1999, "Graded", "PSA 9", "MTG", 3.99, "TCGPlayer"),
+    ("MTG Jeweled Lotus (Extended Art) PSA 10", 2020, 2021, "Graded", "PSA 10", "MTG", 0.00, "eBay"),
+    ("MTG Ragavan, Nimble Pilferer (Etched) PSA 10", 2021, 2022, "Graded", "PSA 10", "MTG", 0.00, "TCGPlayer"),
+    ("MTG The One Ring (Elven Script) PSA 9", 2023, 2023, "Graded", "PSA 9", "MTG", 0.00, "eBay"),
+    ("MTG Sheoldred, the Apocalypse Foil PSA 10", 2022, 2023, "Graded", "PSA 10", "MTG", 0.00, "eBay"),
+    ("MTG Wasteland (Tempest) PSA 9", 1997, 1998, "Graded", "PSA 9", "MTG", 3.99, "PWCC"),
 
-    # Sports cards
-    ("1996 Topps Kobe Bryant RC #138", 1996, 1997, "Graded", "PSA 9", "Sports", 1.29, "eBay"),
-    ("2018 Prizm Luka Doncic Silver RC", 2018, 2019, "Graded", "PSA 10", "Sports", 3.99, "Goldin"),
-    ("2003 Topps Chrome LeBron James RC", 2003, 2004, "Graded", "PSA 10", "Sports", 3.99, "PWCC"),
-    ("2011 Topps Update Mike Trout RC", 2011, 2012, "Graded", "PSA 9", "Sports", 2.99, "eBay"),
-    ("2000 Playoff Contenders Tom Brady Auto RC", 2000, 2001, "Graded", "BGS 9", "Sports", 150.00, "Goldin"),
+    ("Yu-Gi-Oh! Blue-Eyes White Dragon LOB 1st Ed PSA 8", 2002, 2003, "Graded", "PSA 8", "YuGiOh", 3.29, "Goldin"),
+    ("Yu-Gi-Oh! Dark Magician LOB 1st Ed PSA 9", 2002, 2003, "Graded", "PSA 9", "YuGiOh", 3.29, "PWCC"),
+    ("Yu-Gi-Oh! Red-Eyes B. Dragon LOB 1st Ed PSA 8", 2002, 2003, "Graded", "PSA 8", "YuGiOh", 3.29, "eBay"),
+    ("Yu-Gi-Oh! Blue-Eyes Toon Dragon PSA 9", 2003, 2004, "Graded", "PSA 9", "YuGiOh", 3.29, "PWCC"),
+    ("Yu-Gi-Oh! Chaos Emperor Dragon Envoy PSA 9", 2003, 2004, "Graded", "PSA 9", "YuGiOh", 3.29, "eBay"),
+    ("Yu-Gi-Oh! Dark Magician Girl (Magician’s Force) PSA 9", 2003, 2004, "Graded", "PSA 9", "YuGiOh", 3.29, "Goldin"),
+    ("Yu-Gi-Oh! Blue-Eyes White Dragon SDK PSA 10", 2002, 2003, "Graded", "PSA 10", "YuGiOh", 3.29, "eBay"),
+    ("Yu-Gi-Oh! Black Luster Soldier Envoy PSA 10", 2004, 2005, "Graded", "PSA 10", "YuGiOh", 3.29, "PWCC"),
+    ("Yu-Gi-Oh! Judgment Dragon (Ghost Rare) PSA 9", 2008, 2009, "Graded", "PSA 9", "YuGiOh", 3.29, "eBay"),
+    ("Yu-Gi-Oh! Stardust Dragon (Ghost Rare) PSA 9", 2008, 2009, "Graded", "PSA 9", "YuGiOh", 3.29, "eBay"),
 
-    # Yu-Gi-Oh!
-    ("Yu-Gi-Oh! Blue-Eyes White Dragon (LOB-001) 1st Ed.", 2002, 2003, "Graded", "PSA 8", "Yu-Gi-Oh!", 3.00, "eBay"),
-    ("Yu-Gi-Oh! Dark Magician Girl (MFC-000) 1st Ed.", 2003, 2004, "Graded", "PSA 9", "Yu-Gi-Oh!", 3.00, "eBay"),
-    ("Yu-Gi-Oh! Legend of Blue Eyes Booster Box", 2002, 2003, "Sealed", "Factory", "Yu-Gi-Oh!", 69.99, "Heritage"),
+    ("1996 Kobe Bryant Topps #138 PSA 9", 1996, 1997, "Graded", "PSA 9", "Sports", 1.99, "Goldin"),
+    ("1989 Ken Griffey Jr. Upper Deck #1 PSA 9", 1989, 1990, "Graded", "PSA 9", "Sports", 1.00, "PWCC"),
+    ("2003 LeBron James Topps #221 PSA 9", 2003, 2004, "Graded", "PSA 9", "Sports", 1.99, "eBay"),
+    ("2018 Luka Dončić Prizm Silver PSA 10", 2018, 2019, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
+    ("2000 Tom Brady Bowman #236 PSA 9", 2000, 2001, "Graded", "PSA 9", "Sports", 1.29, "PWCC"),
+    ("2019 Shohei Ohtani Topps Chrome PSA 10", 2019, 2020, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
+    ("2011 Mike Trout Update US175 PSA 9", 2011, 2012, "Graded", "PSA 9", "Sports", 2.99, "Goldin"),
+    ("2017 Patrick Mahomes Donruss Rated Rookie PSA 10", 2017, 2018, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
+    ("2018 Jayson Tatum Prizm Silver PSA 10", 2018, 2019, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
+    ("1993 Derek Jeter SP Foil PSA 8", 1993, 1994, "Graded", "PSA 8", "Sports", 1.99, "PWCC"),
 
-    # One Piece / DBZ / Others
-    ("One Piece Romance Dawn Booster Box JP", 2022, 2023, "Sealed", "Factory", "One Piece", 60.00, "Mercari JP"),
-    ("Dragon Ball Z Score 2000 Goku Ultra Rare", 2000, 2001, "Raw", "NM", "DBZ", 3.00, "eBay"),
-    ("Lorcana The First Chapter Booster Box", 2023, 2023, "Sealed", "Factory", "Disney Lorcana", 143.64, "TCGplayer"),
+    # Fill to 50 with additional modern/popular TCG pieces
+    ("Pokémon Mew Gold Star PSA 9", 2006, 2007, "Graded", "PSA 9", "Pokemon", 3.99, "eBay"),
+    ("Pokémon Rayquaza EX Deoxys PSA 8", 2005, 2006, "Graded", "PSA 8", "Pokemon", 3.99, "PWCC"),
+    ("Pokémon Charizard VMAX Shiny PSA 10", 2020, 2021, "Graded", "PSA 10", "Pokemon", 0.00, "eBay"),
+    ("MTG Liliana of the Veil (MM3) PSA 10", 2017, 2018, "Graded", "PSA 10", "MTG", 0.00, "TCGPlayer"),
+    ("MTG Force of Will (Alliances) PSA 9", 1996, 1997, "Graded", "PSA 9", "MTG", 3.99, "PWCC"),
+    ("Yu-Gi-Oh! Blue-Eyes Alternative Dragon PSA 10", 2016, 2017, "Graded", "PSA 10", "YuGiOh", 0.00, "eBay"),
+    ("Yu-Gi-Oh! Dark Armed Dragon PSA 9", 2008, 2009, "Graded", "PSA 9", "YuGiOh", 3.29, "PWCC"),
+    ("2013 Giannis Antetokounmpo Prizm PSA 10", 2013, 2014, "Graded", "PSA 10", "Sports", 2.99, "Goldin"),
+    ("2014 Lionel Messi Prizm World Cup PSA 10", 2014, 2015, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
+    ("2018 Kylian Mbappé Prizm World Cup PSA 10", 2018, 2019, "Graded", "PSA 10", "Sports", 2.99, "eBay"),
 ]
 
-# Fill up to ~50 items with believable variants
-while len(ITEMS) < 50:
-    n = len(ITEMS) + 1
-    ITEMS.append((
-        f"Pokémon Modern Alt-Art #{n:03d}",
-        random.choice(range(2018, 2024)),
-        random.choice(range(2019, 2025)),
-        random.choice(["Raw","Graded","Sealed"]),
-        random.choice(["NM","PSA 9","PSA 10","BGS 9.5","Factory"]),
-        "Pokemon TCG",
-        random.choice([49.99, 99.99, 119.99, 143.00, 200.00]),
-        random.choice(["eBay","TCGplayer","StockX","PWCC"])
-    ))
+def monthly_dates():
+    return pd.date_range("2024-01-01", "2025-12-01", freq="MS")
 
-def month_range():
-    # 24 months: 2024-01 ... 2025-12
-    dates = pd.period_range("2024-01", "2025-12", freq="M").to_timestamp("M")
-    return dates
-
-def synth_series(n_points, start_price):
-    # random CAGR between -5% and +60% over 2 years
-    cagr = random.uniform(-0.05, 0.60)
-    end_mult = (1.0 + cagr) ** 2.0
-    # smooth compounding + a bit of noise
-    base = np.geomspace(start_price, start_price * end_mult, num=n_points)
-    noise = np.random.normal(0, 0.02, size=n_points)  # +/-2% wiggle
-    series = base * (1 + noise)
-    # keep reasonable bounds
-    series = np.clip(series, a_min=max(3.0, start_price*0.5), a_max=start_price*10)
-    return series
+def synth_series(n, start_price, drift=0.18, vol=0.06):
+    """Geometric-ish random walk: positive, trending."""
+    prices = [start_price]
+    months = n - 1
+    # set per-month drift so total ~ drift over the period
+    mu = (1.0 + drift) ** (1.0 / max(months, 1)) - 1.0
+    for _ in range(months):
+        shock = np.random.normal(mu, vol / np.sqrt(12))
+        prices.append(max(1.0, prices[-1] * (1.0 + shock)))
+    return np.round(prices, 2)
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     rows = []
-    dates = month_range()
-    for (name, rel, ret, cond, grade, subtype, retail, source) in ITEMS:
-        # a starting market price guess
-        start_guess = {
-            "Graded": random.uniform(150, 12000),
-            "Sealed": random.uniform(80, 800),
-            "Raw": random.uniform(20, 400)
-        }.get(cond, 200.0)
 
-        prices = synth_series(len(dates), start_guess)
-        for d, p in zip(dates, prices):
+    dates = monthly_dates()
+
+    for (name, rel, ret, cond, grade, subtype, retail, source) in ITEMS:
+        # pick a plausible graded starting price per sub-type
+        base = {
+            "Pokemon": (120, 900),
+            "MTG": (150, 1200),
+            "YuGiOh": (100, 800),
+            "Sports": (80, 2000),
+        }.get(subtype, (80, 600))
+        start = random.uniform(*base)
+        drift = random.uniform(0.05, 0.65)   # 5%–65% total 24-mo drift
+        vol   = random.uniform(0.04, 0.10)
+
+        series = synth_series(len(dates), start, drift=drift, vol=vol)
+
+        for d, p in zip(dates, series):
             rows.append({
                 "item_name": name,
                 "release_year": rel,
@@ -99,11 +110,15 @@ def main():
                 "category_subtype": subtype,
                 "original_retail": float(retail),
                 "source_platform": source,
-                "date": pd.to_datetime(d).date().isoformat(),
-                "price_usd": round(float(p), 2)
+                "date": d.strftime("%Y-%m-%d"),
+                "price_usd": float(p),
             })
+
     df = pd.DataFrame(rows)
     df.to_csv(OUT_CSV, index=False)
     print(f"Wrote {OUT_CSV} with {len(df):,} rows and {df['item_name'].nunique()} items.")
+
 if __name__ == "__main__":
+    random.seed(42)
+    np.random.seed(42)
     main()
