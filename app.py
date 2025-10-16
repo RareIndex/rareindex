@@ -90,7 +90,7 @@ def slice_by_range(df: pd.DataFrame, range_key: str) -> pd.DataFrame:
     return df.copy()
 
 # --- Helper: build leaderboard for toys across a chosen window ---
-def build_toy_leaderboard(df_all: pd.DataFrame, period: str) -> pd.DataFrame:
+def build_item_leaderboard(df_all: pd.DataFrame, period: str) -> pd.DataFrame:
     """
     period: one of '3M','6M','1Y','2Y','YTD','All'
     Returns a DataFrame with per-item ROI (and CAGR when possible) for the chosen window.
@@ -435,124 +435,146 @@ with tab_top10:
 
 with tab_cards:
     st.markdown(
-        "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 trading cards by ROI (demo dataset).</p>",
+        "<p style='text-align:center; color:#555;'>Tracking monthly median resale for top cards by ROI (demo datasets).</p>",
         unsafe_allow_html=True
     )
 
+    # Try category dataset first
+    have_category = True
     try:
-        # Load the full 50-card dataset
         df_all_cards = read_csv_cached("data/cards/cards_top50.csv")
     except FileNotFoundError:
-        st.error("Missing file: data/cards/cards_top50.csv — make sure it’s committed and pushed.")
-    else:
-        # Require columns we expect
-        required_cols = {"item_name", "date", "price_usd"}
-        if not required_cols.issubset(set(df_all_cards.columns)):
-            st.error(f"'data/cards/cards_top50.csv' is missing required columns: {required_cols}")
+        have_category = False
+
+    if have_category:
+        df_all_cards = df_all_cards.copy()
+        df_all_cards["date"] = pd.to_datetime(df_all_cards["date"])
+
+        # ---------- Category Summary ----------
+        st.markdown("### 🧭 Category Summary")
+        lb_period_c = st.radio(
+            "Summary window",
+            ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+            index=2,  # default 1Y
+            horizontal=True,
+            key="cards_summary_window",
+        )
+
+        df_sum_c = slice_by_range(df_all_cards, lb_period_c)
+        if df_sum_c.empty:
+            st.info("No data in selected window.")
         else:
-            # Let the user pick a single card to visualize
-            card_names = sorted(df_all_cards["item_name"].dropna().unique().tolist())
-            choice_c = st.selectbox("Choose a card", card_names, index=0, key="card_picker")
+            df_lb_c = build_toy_leaderboard(df_sum_c, "All")
+            items_ct = df_lb_c.shape[0]
+            avg_roi = df_lb_c["ROI (%)"].mean() if items_ct else None
+            med_roi = df_lb_c["ROI (%)"].median() if items_ct else None
+            top_roi = df_lb_c["ROI (%)"].max() if items_ct else None
 
-            # --- Metadata badges (robust, no dropna filtering) ---
-            meta_cols_c = [
-                "release_year",
-                "retirement_year",
-                "condition",
-                "grade",
-                "category_subtype",
-                "original_retail",
-                "source_platform",
-            ]
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Items", f"{items_ct:,}")
+            c2.metric("Avg ROI", f"{avg_roi:.2f}%" if avg_roi is not None else "—")
+            c3.metric("Median ROI", f"{med_roi:.2f}%" if med_roi is not None else "—")
+            c4.metric("Top item ROI", f"{top_roi:.2f}%" if top_roi is not None else "—")
 
-            # Normalize relevant string columns
-            for c in ["item_name","condition","grade","category_subtype","source_platform"]:
-                if c in df_all_cards.columns:
-                    df_all_cards[c] = df_all_cards[c].astype(str).str.strip()
-
-            missing_meta = [c for c in meta_cols_c if c not in df_all_cards.columns]
-            if missing_meta:
-                st.warning(f"Missing metadata columns: {missing_meta}")
-            else:
-                meta_row = (
-                    df_all_cards.loc[df_all_cards["item_name"] == choice_c, meta_cols_c]
-                    .head(1)  # no dropna(), show whatever we have
-                )
-
-                if not meta_row.empty:
-                    m = meta_row.iloc[0]
-                    rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
-                    ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
-                    cond = m["condition"] if pd.notnull(m["condition"]) else "—"
-                    grade = m["grade"] if pd.notnull(m["grade"]) else "—"
-                    subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
-                    retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
-                    source = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
-
-                    st.markdown(
-                        " ".join([
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {source}</span>",
-                        ]),
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.caption("No metadata found for this item.")
-
-            # Filter to the chosen card and hand a tidy df to show_category()
-            df_one_c = df_all_cards.loc[
-                df_all_cards["item_name"] == choice_c, ["date", "price_usd"]
-            ].copy()
-            show_category(f"{choice_c} (Cards)", df_one_c)
-
-            # --- ROI Leaderboard (Top 50 cards) ---
-            st.markdown("### 🧮 ROI Leaderboard")
-
-            lb_period_c = st.radio(
-                "Window",
-                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
-                index=2,  # default 1Y
-                horizontal=True,
-                key="cards_leaderboard_window",
+            # ---------- Category vs Benchmark ----------
+            st.markdown("### 📈 Category vs Benchmark")
+            benchmark_c = st.selectbox(
+                "Choose benchmark",
+                list(MARKETS.keys()),
+                index=0,
+                key="cards_bench",
             )
 
-            # Re-use the same leaderboard builder (works on item_name/date/price_usd + metadata)
-            df_lb_c = build_toy_leaderboard(df_all_cards, lb_period_c)
+            df_norm_c = df_sum_c.sort_values(["item_name", "date"]).copy()
+            df_norm_c["first_in_win"] = df_norm_c.groupby("item_name")["price_usd"].transform("first")
+            df_norm_c = df_norm_c[df_norm_c["first_in_win"] > 0].copy()
+            df_norm_c["item_idx"] = (df_norm_c["price_usd"] / df_norm_c["first_in_win"]) * 100.0
+            cat_series_c = df_norm_c.groupby("date")["item_idx"].mean().sort_index()
 
-            # Optional quick search
-            q_c = st.text_input("Search (item name contains…)", "", key="cards_lb_search")
-            if q_c.strip():
-                df_lb_c = df_lb_c[df_lb_c["Item"].str.contains(q_c.strip(), case=False, na=False)].copy()
+            bench_ytd_c = MARKETS[benchmark_c]
+            bench_series_c = pd.Series(
+                make_index_series(bench_ytd_c, len(cat_series_c)),
+                index=cat_series_c.index,
+                name=benchmark_c
+            )
 
-            if df_lb_c.empty:
-                st.info("No leaderboard rows for the selected window yet.")
-            else:
-                df_show_c = df_lb_c.copy()
-                for col in ["Start ($)", "Latest ($)"]:
-                    df_show_c[col] = df_show_c[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-                for col in ["ROI (%)", "CAGR (%)"]:
-                    df_show_c[col] = df_show_c[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+            chart_df_c = pd.DataFrame({
+                "Cards (Category Index)": cat_series_c,
+                benchmark_c: bench_series_c.values
+            })
+            st.line_chart(chart_df_c)
 
+            # ---------- Top & Bottom performers ----------
+            st.markdown("### Top & Bottom performers")
+            top3c = df_lb_c.head(3).copy()
+            bot3c = df_lb_c.tail(3).copy()
+
+            for _df in (top3c, bot3c):
+                _df["Start ($)"]  = _df["Start ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                _df["Latest ($)"] = _df["Latest ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                _df["ROI (%)"]    = _df["ROI (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+                _df["CAGR (%)"]   = _df["CAGR (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+            lcol, rcol = st.columns(2)
+            with lcol:
+                st.caption("Top 3 by ROI")
                 st.dataframe(
-                    df_show_c[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
-                    width="stretch",
+                    top3c[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch"
+                )
+            with rcol:
+                st.caption("Bottom 3 by ROI")
+                st.dataframe(
+                    bot3c[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch"
                 )
 
-                csv_bytes_c = df_lb_c.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "Download leaderboard (CSV)",
-                    data=csv_bytes_c,
-                    file_name=f"cards_leaderboard_{lb_period_c}.csv",
-                    mime="text/csv",
-                )
+        st.markdown("---")
+        st.markdown("### Individual Item")
 
-    # News stays at the end of the tab
-    render_news("Cards")
+        card_names = sorted(df_all_cards["item_name"].dropna().unique().tolist())
+        choice_c = st.selectbox("Choose a card", card_names, index=0, key="card_picker")
+
+        meta_cols = [
+            "release_year","retirement_year","condition","grade",
+            "category_subtype","original_retail","source_platform",
+        ]
+        meta_row = df_all_cards.loc[df_all_cards["item_name"] == choice_c, meta_cols].head(1)
+        if not meta_row.empty:
+            m = meta_row.iloc[0]
+            retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+            rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
+            ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
+            cond = m["condition"] if pd.notnull(m["condition"]) else "—"
+            grade = m["grade"] if pd.notnull(m["grade"]) else "—"
+            subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
+            src = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
+
+            st.markdown(
+                " ".join([
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {src}</span>",
+                ]),
+                unsafe_allow_html=True
+            )
+        else:
+            st.caption("No metadata found for this item.")
+
+        df_one_c = df_all_cards.loc[df_all_cards["item_name"] == choice_c, ["date", "price_usd"]].copy()
+        show_category(f"{choice_c} (Cards)", df_one_c)
+
+        render_news("Cards")
+
+    else:
+        # ---- Fallback: single demo card path you already had ----
+        st.caption("No category dataset found yet — showing single demo card.")
+        show_category("Pokémon Card #011 (Cards)", "data/cards/cards_011.csv")
+        render_news("Cards")
 
 with tab_watches:
     st.markdown(
@@ -560,121 +582,148 @@ with tab_watches:
         unsafe_allow_html=True
     )
 
+    # ---- Load dataset
     try:
-        # Load the full 50-watch dataset
         df_all_watches = read_csv_cached("data/watches/watches_top50.csv")
     except FileNotFoundError:
         st.error("Missing file: data/watches/watches_top50.csv — make sure it’s committed and pushed.")
+        render_news("Watches")
     else:
-        # Require columns we expect
-        required_cols = {"item_name", "date", "price_usd"}
-        if not required_cols.issubset(set(df_all_watches.columns)):
-            st.error(f"'data/watches/watches_top50.csv' is missing required columns: {required_cols}")
+        # Ensure types
+        df_all_watches = df_all_watches.copy()
+        df_all_watches["date"] = pd.to_datetime(df_all_watches["date"])
+
+        # ---------- Category Summary ----------
+        st.markdown("### 🧭 Category Summary")
+
+        # Window selector (same as Toys)
+        lb_period_w = st.radio(
+            "Summary window",
+            ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+            index=2,  # default 1Y
+            horizontal=True,
+            key="watches_summary_window",
+        )
+
+        df_sum = slice_by_range(df_all_watches, lb_period_w)
+        if df_sum.empty:
+            st.info("No data in selected window.")
         else:
-            # Let the user pick a single watch to visualize
-            watch_names = sorted(df_all_watches["item_name"].dropna().unique().tolist())
-            choice_w = st.selectbox("Choose a watch", watch_names, index=0, key="watch_picker")
+            # Per-item ROI
+            df_lb_w = build_toy_leaderboard(df_sum, "All")  # already sliced; treat as All inside
+            items_ct = df_lb_w.shape[0]
+            avg_roi = df_lb_w["ROI (%)"].mean() if items_ct else None
+            med_roi = df_lb_w["ROI (%)"].median() if items_ct else None
+            top_roi = df_lb_w["ROI (%)"].max() if items_ct else None
 
-            # --- Show metadata for the selected watch ---
-            meta_cols = [
-                "release_year",
-                "retirement_year",
-                "condition",
-                "grade",
-                "category_subtype",
-                "original_retail",
-                "source_platform",
-            ]
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Items", f"{items_ct:,}")
+            c2.metric("Avg ROI", f"{avg_roi:.2f}%" if avg_roi is not None else "—")
+            c3.metric("Median ROI", f"{med_roi:.2f}%" if med_roi is not None else "—")
+            c4.metric("Top item ROI", f"{top_roi:.2f}%" if top_roi is not None else "—")
 
-            # Normalize strings to avoid mismatches
-            for c in ["item_name", "condition", "grade", "category_subtype", "source_platform"]:
-                if c in df_all_watches.columns:
-                    df_all_watches[c] = df_all_watches[c].astype(str).str.strip()
+            # ---------- Category vs Benchmark ----------
+            st.markdown("### 📈 Category vs Benchmark")
 
-            missing = [c for c in meta_cols if c not in df_all_watches.columns]
-            if missing:
-                st.warning(f"Missing metadata columns: {missing}")
-            else:
-                meta_row = (
-                    df_all_watches.loc[df_all_watches["item_name"] == choice_w, meta_cols]
-                    .head(1)  # no dropna() so we still show partial badges
-                )
-
-                if not meta_row.empty:
-                    m = meta_row.iloc[0]
-                    rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
-                    ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
-                    cond = m["condition"] if pd.notnull(m["condition"]) else "—"
-                    grade = m["grade"] if pd.notnull(m["grade"]) else "—"
-                    subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
-                    retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
-                    source = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
-
-                    st.markdown(
-                        " ".join([
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
-                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {source}</span>",
-                        ]),
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.caption("No metadata found for this item.")
-
-            # Filter to the chosen watch and pass a tidy df to show_category()
-            df_one_w = df_all_watches.loc[
-                df_all_watches["item_name"] == choice_w, ["date", "price_usd"]
-            ].copy()
-            show_category(f"{choice_w} (Watches)", df_one_w)
-
-            # --- ROI Leaderboard (Top 50 watches) ---
-            st.markdown("### 🧮 ROI Leaderboard")
-
-            lb_period_w = st.radio(
-                "Window",
-                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
-                index=2,  # default 1Y
-                horizontal=True,
-                key="watches_leaderboard_window",
+            benchmark = st.selectbox(
+                "Choose benchmark",
+                list(MARKETS.keys()),
+                index=0,
+                key="watch_bench",
             )
 
-            # Re-use the generic leaderboard builder (works for any item_name/date/price_usd dataset)
-            df_lb_w = build_toy_leaderboard(df_all_watches, lb_period_w)
+            # Build category index: for each item, normalize to first value in window, then average
+            df_norm = df_sum.sort_values(["item_name", "date"]).copy()
+            df_norm["first_in_win"] = df_norm.groupby("item_name")["price_usd"].transform("first")
+            df_norm = df_norm[df_norm["first_in_win"] > 0].copy()
+            df_norm["item_idx"] = (df_norm["price_usd"] / df_norm["first_in_win"]) * 100.0
+            cat_series = df_norm.groupby("date")["item_idx"].mean().sort_index()
 
-            # Optional quick search
-            q_w = st.text_input("Search (item name contains…)", "", key="watches_lb_search")
-            if q_w.strip():
-                df_lb_w = df_lb_w[df_lb_w["Item"].str.contains(q_w.strip(), case=False, na=False)].copy()
+            # Benchmark synthetic series sized to same number of points as dates we have
+            bench_ytd = MARKETS[benchmark]
+            bench_series = pd.Series(
+                make_index_series(bench_ytd, len(cat_series)),
+                index=cat_series.index,
+                name=benchmark
+            )
 
-            if df_lb_w.empty:
-                st.info("No leaderboard rows for the selected window yet.")
-            else:
-                df_show_w = df_lb_w.copy()
-                for col in ["Start ($)", "Latest ($)"]:
-                    df_show_w[col] = df_show_w[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-                for col in ["ROI (%)", "CAGR (%)"]:
-                    df_show_w[col] = df_show_w[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+            chart_df = pd.DataFrame({
+                "Watches (Category Index)": cat_series,
+                benchmark: bench_series.values
+            })
 
+            st.line_chart(chart_df)
+
+            # ---------- Top & Bottom performers ----------
+            st.markdown("### Top & Bottom performers")
+            top3 = df_lb_w.head(3).copy()
+            bot3 = df_lb_w.tail(3).copy()
+
+            # Pretty columns
+            for _df in (top3, bot3):
+                _df["Start ($)"]  = _df["Start ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                _df["Latest ($)"] = _df["Latest ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                _df["ROI (%)"]    = _df["ROI (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+                _df["CAGR (%)"]   = _df["CAGR (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+            lcol, rcol = st.columns(2)
+            with lcol:
+                st.caption("Top 3 by ROI")
                 st.dataframe(
-                    df_show_w[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
-                    width="stretch",
+                    top3[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch"
+                )
+            with rcol:
+                st.caption("Bottom 3 by ROI")
+                st.dataframe(
+                    bot3[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch"
                 )
 
-                # Download raw (numeric) leaderboard as CSV
-                csv_bytes_w = df_lb_w.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "Download leaderboard (CSV)",
-                    data=csv_bytes_w,
-                    file_name=f"watches_leaderboard_{lb_period_w}.csv",
-                    mime="text/csv",
-                )
+        # ---------- Per-item drilldown ----------
+        st.markdown("---")
+        st.markdown("### Individual Item")
 
-    # News stays at the end of the tab
-    render_news("Watches")
+        watch_names = sorted(df_all_watches["item_name"].dropna().unique().tolist())
+        choice_w = st.selectbox("Choose a watch", watch_names, index=0, key="watch_picker")
+
+        # Metadata badges
+        meta_cols = [
+            "release_year","retirement_year","condition","grade",
+            "category_subtype","original_retail","source_platform",
+        ]
+        meta_row = df_all_watches.loc[df_all_watches["item_name"] == choice_w, meta_cols].head(1)
+        if not meta_row.empty:
+            m = meta_row.iloc[0]
+            retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+            rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
+            ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
+            cond = m["condition"] if pd.notnull(m["condition"]) else "—"
+            grade = m["grade"] if pd.notnull(m["grade"]) else "—"
+            subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
+            src = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
+
+            st.markdown(
+                " ".join([
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {src}</span>",
+                ]),
+                unsafe_allow_html=True
+            )
+        else:
+            st.caption("No metadata found for this item.")
+
+        # Filter → show line chart via existing helper
+        df_one_w = df_all_watches.loc[df_all_watches["item_name"] == choice_w, ["date", "price_usd"]].copy()
+        show_category(f"{choice_w} (Watches)", df_one_w)
+
+        # News
+        render_news("Watches")
 
 with tab_toys:
     st.markdown(
@@ -693,13 +742,13 @@ with tab_toys:
         if not required_cols.issubset(set(df_all_toys.columns)):
             st.error(f"'data/toys/toys_top50.csv' is missing required columns: {required_cols}")
         else:
-            # ---- Single-item chart section ----
-            toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
-            choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
-            # --- 📈 Category Summary (Toys) ---
-            st.markdown("### 📈 Category Summary")
+            # -----------------------------
+            # CATEGORY SUMMARY (global view)
+            # -----------------------------
+            st.subheader("Category Summary")
 
-            sum_period = st.radio(
+            # Window selector for ALL category metrics
+            lb_period = st.radio(
                 "Summary window",
                 ["3M", "6M", "1Y", "2Y", "YTD", "All"],
                 index=2,  # default 1Y
@@ -707,66 +756,99 @@ with tab_toys:
                 key="toys_summary_window",
             )
 
-            df_lb_sum = build_toy_leaderboard(df_all_toys, sum_period)
+            # Build leaderboard (per-item ROI) for the chosen window
+            df_lb = build_item_leaderboard(df_all_toys, lb_period)
+            df_lb_w = build_item_leaderboard(df_sum, "All")
+            df_lb_c = build_item_leaderboard(df_sum_c, "All")
 
-            if df_lb_sum.empty:
-                st.info("No summary available for this window.")
+            # KPIs
+            num_items = df_lb["Item"].nunique() if not df_lb.empty else 0
+            avg_roi = df_lb["ROI (%)"].mean() if not df_lb.empty else np.nan
+            med_roi = df_lb["ROI (%)"].median() if not df_lb.empty else np.nan
+            top_roi = df_lb["ROI (%)"].max() if not df_lb.empty else np.nan
+
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Items", f"{num_items}")
+            c2.metric("Avg ROI", f"{avg_roi:,.2f}%" if pd.notnull(avg_roi) else "—")
+            c3.metric("Median ROI", f"{med_roi:,.2f}%" if pd.notnull(med_roi) else "—")
+            c4.metric("Top item ROI", f"{top_roi:,.2f}%" if pd.notnull(top_roi) else "—")
+
+            # Top & Bottom performers (tables)
+            st.markdown("### Top & Bottom performers")
+            if df_lb.empty:
+                st.info("No leaderboard rows for the selected window yet.")
             else:
-                # KPIs
-                n_items = int(len(df_lb_sum))
-                avg_roi = float(df_lb_sum["ROI (%)"].mean())
-                med_roi = float(df_lb_sum["ROI (%)"].median())
-                top_row = df_lb_sum.iloc[0]
-                bottom_row = df_lb_sum.iloc[-1]
+                top3 = df_lb.head(3).copy()
+                bottom3 = df_lb.tail(3).copy()
 
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Items", f"{n_items}")
-                c2.metric("Avg ROI", f"{avg_roi:,.2f}%")
-                c3.metric("Median ROI", f"{med_roi:,.2f}%")
-                c4.metric("Top Item ROI", f"{top_row['ROI (%)']:,.2f}%")
+                for col in ["Start ($)", "Latest ($)"]:
+                    top3[col] = top3[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                    bottom3[col] = bottom3[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                for col in ["ROI (%)", "CAGR (%)"]:
+                    top3[col] = top3[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+                    bottom3[col] = bottom3[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
 
-                # Top / Bottom tables (small)
-                st.markdown("#### Top & Bottom performers")
-                top3 = df_lb_sum.head(3).copy()
-                bot3 = df_lb_sum.tail(3).copy()
-
-                # Pretty format for display
-                for df_show in (top3, bot3):
-                    df_show["Start ($)"]  = df_show["Start ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-                    df_show["Latest ($)"] = df_show["Latest ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-                    df_show["ROI (%)"]    = df_show["ROI (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
-                    df_show["CAGR (%)"]   = df_show["CAGR (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
-
-                colA, colB = st.columns(2)
-                with colA:
-                    st.caption("Top 3 (by ROI)")
+                cL, cR = st.columns(2)
+                with cL:
+                    st.caption("Top 3 by ROI")
                     st.dataframe(
                         top3[["Item","Subtype","ROI (%)","CAGR (%)","Start ($)","Latest ($)"]],
                         width="stretch",
                     )
-                with colB:
-                    st.caption("Bottom 3 (by ROI)")
+                with cR:
+                    st.caption("Bottom 3 by ROI")
                     st.dataframe(
-                        bot3[["Item","Subtype","ROI (%)","CAGR (%)","Start ($)","Latest ($)"]],
+                        bottom3[["Item","Subtype","ROI (%)","CAGR (%)","Start ($)","Latest ($)"]],
                         width="stretch",
                     )
 
-            # Show metadata for the selected toy
-            meta_cols = [
-                "release_year",
-                "retirement_year",
-                "condition",
-                "grade",
-                "category_subtype",
-                "original_retail",
-                "source_platform",
-            ]
-            meta_row = (
-                df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols]
-                .dropna()
-                .head(1)
+            # -----------------------------
+            # NEW: Category vs Benchmark
+            # -----------------------------
+            st.markdown("### Category vs Benchmark")
+
+            bench_key = st.selectbox(
+                "Benchmark",
+                list(MARKETS.keys()),
+                index=0,
+                key="toys_benchmark_choice",
             )
 
+            # Aggregate ALL toys -> average monthly price
+            ts = (
+                df_all_toys.groupby("date", as_index=False)["price_usd"]
+                .mean()
+                .rename(columns={"price_usd": "avg_price"})
+                .sort_values("date")
+            )
+            ts_use = slice_by_range(ts, lb_period)
+
+            if len(ts_use) >= 2:
+                cat_index = (ts_use["avg_price"] / ts_use["avg_price"].iloc[0]) * 100.0
+                bench_index = make_index_series(MARKETS[bench_key], len(ts_use))
+
+                plot_df = pd.DataFrame(
+                    {"Toys (avg)": cat_index.values, bench_key: bench_index},
+                    index=ts_use["date"]
+                )
+                st.line_chart(plot_df, width="stretch")
+            else:
+                st.info("Not enough data points to plot the category vs benchmark chart for this window.")
+
+            # ---------------------------------------------
+            # INDIVIDUAL TOY (moved BELOW the summary block)
+            # ---------------------------------------------
+            st.markdown("---")
+            # Let the user pick a single toy to visualize
+            toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
+            choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
+
+            # --- Metadata badges for the chosen toy
+            meta_cols = [
+                "release_year","retirement_year","condition","grade",
+                "category_subtype","original_retail","source_platform",
+            ]
+            meta_row = df_all_toys.loc[df_all_toys["item_name"] == choice, meta_cols].head(1)
             if not meta_row.empty:
                 m = meta_row.iloc[0]
                 retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
@@ -785,92 +867,11 @@ with tab_toys:
             else:
                 st.caption("No metadata found for this item.")
 
-            # Filter to the chosen item and pass a tidy df to show_category()
+            # Individual toy time series → show_category()
             df_one = df_all_toys.loc[
                 df_all_toys["item_name"] == choice, ["date", "price_usd"]
             ].copy()
             show_category(f"{choice} (Toys)", df_one)
-
-            # --- ROI Leaderboard (Top 50 toys) ---
-    st.markdown("### 🧮 ROI Leaderboard")
-
-    # Window selector
-    lb_period = st.radio(
-        "Window",
-        ["3M", "6M", "1Y", "2Y", "YTD", "All"],
-        index=2,  # default 1Y
-        horizontal=True,
-        key="toys_leaderboard_window",
-    )
-
-    # Build raw leaderboard (numeric)
-    df_lb = build_toy_leaderboard(df_all_toys, lb_period)
-
-    # ---- Filters (Subtype / Condition / Grade / Release Year) ----
-    # Build option lists from the full toys dataset (more complete than df_lb)
-    subtypes = sorted(df_all_toys["category_subtype"].dropna().astype(str).unique().tolist())
-    conditions = sorted(df_all_toys["condition"].dropna().astype(str).unique().tolist())
-    grades = sorted(df_all_toys["grade"].dropna().astype(str).unique().tolist())
-    years_all = df_all_toys["release_year"].dropna().astype(int)
-    yr_min, yr_max = (int(years_all.min()), int(years_all.max())) if not years_all.empty else (1990, 2025)
-
-    with st.expander("Filters", expanded=False):
-        sel_subtypes = st.multiselect("Subtype", options=subtypes, default=[], key="lb_f_subtype")
-        sel_conditions = st.multiselect("Condition", options=conditions, default=[], key="lb_f_condition")
-        sel_grades = st.multiselect("Grade", options=grades, default=[], key="lb_f_grade")
-        yr_range = st.slider("Release year range", min_value=yr_min, max_value=yr_max, value=(yr_min, yr_max), step=1, key="lb_f_years")
-        top_k = st.slider("Show top N", min_value=10, max_value=50, value=25, step=5, key="lb_topk")
-
-    # Apply filters to leaderboard (map to df_lb column names)
-    if sel_subtypes:
-        df_lb = df_lb[df_lb["Subtype"].isin(sel_subtypes)].copy()
-    if sel_conditions:
-        df_lb = df_lb[df_lb["Condition"].isin(sel_conditions)].copy()
-    if sel_grades:
-        df_lb = df_lb[df_lb["Grade"].isin(sel_grades)].copy()
-    df_lb = df_lb[df_lb["Release Year"].between(yr_range[0], yr_range[1], inclusive="both") | df_lb["Release Year"].isna()].copy()
-
-    # ---- Sorting controls ----
-    sort_col = st.selectbox(
-        "Sort by",
-        ["ROI (%)", "CAGR (%)", "Latest ($)", "Start ($)"],
-        index=0,
-        key="lb_sort_col",
-    )
-    sort_dir = st.radio("Order", ["Desc", "Asc"], index=0, horizontal=True, key="lb_sort_dir")
-    df_lb = df_lb.sort_values(sort_col, ascending=(sort_dir == "Asc"), na_position="last")
-
-    # Limit to top N
-    df_lb = df_lb.head(top_k).reset_index(drop=True)
-
-    # Optional quick search by name
-    q = st.text_input("Search (item name contains…)", "", key="toys_lb_search")
-    if q.strip():
-        df_lb = df_lb[df_lb["Item"].str.contains(q.strip(), case=False, na=False)].copy()
-
-    if df_lb.empty:
-        st.info("No leaderboard rows for the selected window/filters yet.")
-    else:
-        # Pretty display columns
-        df_show = df_lb.copy()
-        for col in ["Start ($)", "Latest ($)"]:
-            df_show[col] = df_show[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
-        for col in ["ROI (%)", "CAGR (%)"]:
-            df_show[col] = df_show[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
-
-        st.dataframe(
-            df_show[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
-            width="stretch",
-        )
-
-        # Download raw (numeric) leaderboard as CSV
-        csv_bytes = df_lb.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download leaderboard (CSV)",
-            data=csv_bytes,
-            file_name=f"toys_leaderboard_{lb_period}.csv",
-            mime="text/csv",
-        )
 
     # News stays at the end of the tab
     render_news("Toys")
