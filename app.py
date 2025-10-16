@@ -439,8 +439,110 @@ with tab_cards:
     render_news("Cards")
 
 with tab_watches:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median resale for a representative luxury watch reference.</p>", unsafe_allow_html=True)
-    show_category("Rolex Submariner 116610LN (Watches)", "watches.csv")
+    st.markdown(
+        "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 watches by ROI (demo dataset).</p>",
+        unsafe_allow_html=True
+    )
+
+    try:
+        # Load the full 50-watch dataset
+        df_all_watches = read_csv_cached("data/watches/watches_top50.csv")
+    except FileNotFoundError:
+        st.error("Missing file: data/watches/watches_top50.csv — make sure it’s committed and pushed.")
+    else:
+        # Require columns we expect
+        required_cols = {"item_name", "date", "price_usd"}
+        if not required_cols.issubset(set(df_all_watches.columns)):
+            st.error(f"'data/watches/watches_top50.csv' is missing required columns: {required_cols}")
+        else:
+            # Let the user pick a single watch to visualize
+            watch_names = sorted(df_all_watches["item_name"].dropna().unique().tolist())
+            choice_w = st.selectbox("Choose a watch", watch_names, index=0, key="watch_picker")
+
+            # --- Show metadata for the selected watch (badges) ---
+            meta_cols_w = [
+                "release_year",
+                "retirement_year",
+                "condition",
+                "grade",
+                "category_subtype",
+                "original_retail",
+                "source_platform",
+            ]
+            meta_row_w = (
+                df_all_watches.loc[df_all_watches["item_name"] == choice_w, meta_cols_w]
+                .dropna()
+                .head(1)
+            )
+
+            if not meta_row_w.empty:
+                mw = meta_row_w.iloc[0]
+                retail_str_w = f"${float(mw['original_retail']):,.2f}" if pd.notnull(mw["original_retail"]) else "—"
+                st.markdown(
+                    " ".join([
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {int(mw['release_year']) if pd.notnull(mw['release_year']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {int(mw['retirement_year']) if pd.notnull(mw['retirement_year']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {mw['condition'] if pd.notnull(mw['condition']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {mw['grade'] if pd.notnull(mw['grade']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {mw['category_subtype'] if pd.notnull(mw['category_subtype']) else '—'}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str_w}</span>",
+                        f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {mw['source_platform'] if pd.notnull(mw['source_platform']) else '—'}</span>",
+                    ]),
+                    unsafe_allow_html=True
+                )
+            else:
+                st.caption("No metadata found for this item.")
+
+            # Filter to the chosen watch and pass a tidy df to show_category()
+            df_one_w = df_all_watches.loc[
+                df_all_watches["item_name"] == choice_w, ["date", "price_usd"]
+            ].copy()
+            show_category(f"{choice_w} (Watches)", df_one_w)
+
+            # --- ROI Leaderboard (Top 50 watches) ---
+            st.markdown("### 🧮 ROI Leaderboard")
+
+            lb_period_w = st.radio(
+                "Window",
+                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+                index=2,  # default 1Y
+                horizontal=True,
+                key="watches_leaderboard_window",
+            )
+
+            # Re-use the same leaderboard builder (it works on item_name/date/price_usd + metadata)
+            df_lb_w = build_toy_leaderboard(df_all_watches, lb_period_w)
+
+            # Optional quick search
+            q_w = st.text_input("Search (item name contains…)", "", key="watches_lb_search")
+            if q_w.strip():
+                df_lb_w = df_lb_w[df_lb_w["Item"].str.contains(q_w.strip(), case=False, na=False)].copy()
+
+            if df_lb_w.empty:
+                st.info("No leaderboard rows for the selected window yet.")
+            else:
+                # Pretty display columns
+                df_show_w = df_lb_w.copy()
+                for col in ["Start ($)", "Latest ($)"]:
+                    df_show_w[col] = df_show_w[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                for col in ["ROI (%)", "CAGR (%)"]:
+                    df_show_w[col] = df_show_w[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+                st.dataframe(
+                    df_show_w[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch",
+                )
+
+                # Download raw (numeric) leaderboard as CSV
+                csv_bytes_w = df_lb_w.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "Download leaderboard (CSV)",
+                    data=csv_bytes_w,
+                    file_name=f"watches_leaderboard_{lb_period_w}.csv",
+                    mime="text/csv",
+                )
+
+    # News stays at the end of the tab
     render_news("Watches")
 
 with tab_toys:
