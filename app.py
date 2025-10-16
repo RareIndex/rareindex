@@ -5,6 +5,9 @@ import pandas as pd
 import numpy as np
 import feedparser
 
+from io import BytesIO
+import zipfile
+
 # -------------------------
 # Basic config
 # -------------------------
@@ -202,6 +205,34 @@ def render_news(category_name: str):
             f"  <span style='color:#777;font-size:12px;'>{pub}</span>",
             unsafe_allow_html=True,
         )
+def build_export_zip(category_slug: str,
+                     win_key: str,
+                     df_all: pd.DataFrame,
+                     df_lb_raw: pd.DataFrame,
+                     top3_raw: pd.DataFrame,
+                     bot3_raw: pd.DataFrame,
+                     choice: str,
+                     df_one_raw: pd.DataFrame) -> bytes:
+    """
+    Returns ZIP bytes containing:
+      - full dataset
+      - leaderboard for current window
+      - Top+Bottom combined
+      - selected item's timeseries
+    All are RAW numeric dataframes (no formatting applied).
+    """
+    combo = pd.concat(
+        [top3_raw.assign(_rank="Top"), bot3_raw.assign(_rank="Bottom")],
+        ignore_index=True
+    )
+
+    bio = BytesIO()
+    with zipfile.ZipFile(bio, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"{category_slug}_full_dataset.csv", df_all.to_csv(index=False))
+        z.writestr(f"{category_slug}_leaderboard_{win_key}.csv", df_lb_raw.to_csv(index=False))
+        z.writestr(f"{category_slug}_top_bottom_{win_key}.csv", combo.to_csv(index=False))
+        z.writestr(f"{category_slug}_{slugify(choice)}.csv", df_one_raw.to_csv(index=False))
+    return bio.getvalue()
 
 # -------------------------
 # Item chart helper
@@ -233,6 +264,40 @@ def show_item_chart(title: str, df_source: pd.DataFrame):
     recent["Price ($)"] = recent["price_usd"].map(lambda v: f"${v:,.2f}")
     st.caption("Recent data points")
     st.dataframe(recent[["Date", "Price ($)"]], width="stretch")
+
+
+# -------------------------
+# Export-all ZIP helper (single definition)
+# -------------------------
+def build_export_zip(category_slug: str,
+                     win_key: str,
+                     df_all: pd.DataFrame,
+                     df_lb_raw: pd.DataFrame,
+                     top3_raw: pd.DataFrame,
+                     bot3_raw: pd.DataFrame,
+                     choice: str,
+                     df_one_raw: pd.DataFrame) -> bytes:
+    """
+    Returns ZIP bytes containing:
+      - full dataset
+      - leaderboard for current window
+      - Top+Bottom combined
+      - selected item's timeseries
+    All are RAW numeric dataframes (no formatting applied).
+    """
+    combo_raw = pd.concat(
+        [top3_raw.assign(_rank="Top"), bot3_raw.assign(_rank="Bottom")],
+        ignore_index=True
+    )
+
+    bio = BytesIO()
+    with zipfile.ZipFile(bio, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"{category_slug}_full_dataset.csv", df_all.to_csv(index=False))
+        z.writestr(f"{category_slug}_leaderboard_{win_key}.csv", df_lb_raw.to_csv(index=False))
+        z.writestr(f"{category_slug}_top_bottom_{win_key}.csv", combo_raw.to_csv(index=False))
+        z.writestr(f"{category_slug}_{slugify(choice)}.csv", df_one_raw.to_csv(index=False))
+    return bio.getvalue()
+
 
 # -------------------------
 # Category tab renderer
@@ -284,7 +349,7 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
     if df_win.empty:
         st.info("No data in selected window.")
     else:
-        # Per-item ROI leaderboard for this window
+        # Per-item ROI leaderboard for this window (raw numeric)
         df_lb = build_leaderboard(df_all, win_key)
         items_ct = df_lb.shape[0]
         avg_roi = df_lb["ROI (%)"].mean() if items_ct else None
@@ -330,38 +395,65 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
         if df_lb.empty:
             st.info("No leaderboard rows for the selected window yet.")
         else:
-            top3 = df_lb.head(3).copy()
-            bot3 = df_lb.tail(3).copy()
+            # Take RAW copies first (for downloads/ZIP)
+            top3_raw = df_lb.head(3).copy()
+            bot3_raw = df_lb.tail(3).copy()
 
-            # Pretty display
-            def fmt_money(v):  return f"${v:,.2f}" if pd.notnull(v) else "—"
-            def fmt_pct(v):    return f"{v:,.2f}%" if pd.notnull(v) else "—"
+            # ---------- Download: Export All (ZIP) ----------
+            zip_bytes = build_export_zip(
+                category_slug=slugify(news_key),  # e.g., "toys", "watches", "cards"
+                win_key=win_key,
+                df_all=df_all,                    # full dataset (raw)
+                df_lb_raw=df_lb,                  # leaderboard for current window (raw)
+                top3_raw=top3_raw,                # raw top 3
+                bot3_raw=bot3_raw,                # raw bottom 3
+                choice=choice,                    # selected item name from below (we'll set it next)
+                df_one_raw=None                   # <- placeholder for now; we wire real df after per-item
+            )
+            st.download_button(
+                "Export All (ZIP)",
+                data=zip_bytes,
+                file_name=f"{slugify(news_key)}_export_{slugify(win_key)}.zip",
+                mime="application/zip",
+            )
+
+            # Pretty display copies
+            top3 = top3_raw.copy()
+            bot3 = bot3_raw.copy()
+
+            def fmt_money(v):
+                return f"${v:,.2f}" if pd.notnull(v) else "—"
+
+            def fmt_pct(v):
+                return f"{v:,.2f}%" if pd.notnull(v) else "—"
 
             for _df in (top3, bot3):
-                _df["Start ($)"]  = _df["Start ($)"].apply(fmt_money)
+                _df["Start ($)"] = _df["Start ($)"].apply(fmt_money)
                 _df["Latest ($)"] = _df["Latest ($)"].apply(fmt_money)
-                _df["ROI (%)"]    = _df["ROI (%)"].apply(fmt_pct)
-                _df["CAGR (%)"]   = _df["CAGR (%)"].apply(fmt_pct)
+                _df["ROI (%)"] = _df["ROI (%)"].apply(fmt_pct)
+                _df["CAGR (%)"] = _df["CAGR (%)"].apply(fmt_pct)
 
             lcol, rcol = st.columns(2)
             with lcol:
                 st.caption("Top 3 by ROI")
                 st.dataframe(
-                    top3[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    top3[["Item", "Subtype", "Condition", "Grade", "Release Year",
+                          "Start ($)", "Latest ($)", "ROI (%)", "CAGR (%)"]],
                     width="stretch",
                 )
             with rcol:
                 st.caption("Bottom 3 by ROI")
                 st.dataframe(
-                    bot3[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    bot3[["Item", "Subtype", "Condition", "Grade", "Release Year",
+                          "Start ($)", "Latest ($)", "ROI (%)", "CAGR (%)"]],
                     width="stretch",
                 )
 
-            # ---------- Download: Top + Bottom combined ----------
-            combo = pd.concat([
-                top3.copy().assign(Rank="Top"),
-                bot3.copy().assign(Rank="Bottom")
-            ], ignore_index=True)
+            # ---------- Download: Top + Bottom combined (RAW) ----------
+            combo = pd.concat(
+                [top3_raw.assign(Rank="Top"), bot3_raw.assign(Rank="Bottom")],
+                ignore_index=True
+            )
             st.download_button(
                 "Download Top & Bottom (CSV)",
                 data=combo.to_csv(index=False).encode("utf-8"),
@@ -373,52 +465,48 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
     st.markdown("---")
     st.markdown("### Individual Item")
 
-    item_names = sorted(df_all["item_name"].dropna().unique().tolist())
-    choice = st.selectbox(f"Choose a {category_name[:-1] if category_name.endswith('s') else category_name}", item_names, index=0, key=f"{slugify(category_name)}_picker")
+    names = sorted(df_all["item_name"].dropna().unique().tolist())
+    choice = st.selectbox(f"Choose a {category_name.lower()[:-1] if category_name.endswith('s') else category_name.lower()}",
+                          names, index=0, key=f"{slugify(category_name)}_picker")
 
-    # Metadata badges (best-effort)
-    meta_cols = [
-        "release_year","retirement_year","condition","grade",
-        "category_subtype","original_retail","source_platform",
-    ]
+    # Metadata badges (optional, if your dataset has these)
+    meta_cols = ["release_year","retirement_year","condition","grade","category_subtype","original_retail","source_platform"]
     if set(meta_cols).issubset(df_all.columns):
         meta_row = df_all.loc[df_all["item_name"] == choice, meta_cols].head(1)
         if not meta_row.empty:
             m = meta_row.iloc[0]
-
-            def val(k):
-                v = m.get(k, None)
-                if pd.isna(v):
-                    return "—"
-                if k in ("release_year","retirement_year"):
+            def _val(col):
+                v = m.get(col, None)
+                if pd.isna(v): return "—"
+                if col in ("release_year","retirement_year"):
                     try: return str(int(v))
-                    except: return "—"
-                if k == "original_retail":
+                    except Exception: return str(v)
+                if col == "original_retail":
                     try: return f"${float(v):,.2f}"
-                    except: return "—"
+                    except Exception: return "—"
                 return str(v)
-
-            st.markdown(" ".join([
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {val('release_year')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {val('retirement_year')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {val('condition')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {val('grade')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {val('category_subtype')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {val('original_retail')}</span>",
-                f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {val('source_platform')}</span>",
-            ]), unsafe_allow_html=True)
+            st.markdown(
+                " ".join([
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {_val('release_year')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {_val('retirement_year')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {_val('condition')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {_val('grade')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {_val('category_subtype')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {_val('original_retail')}</span>",
+                    f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {_val('source_platform')}</span>",
+                ]),
+                unsafe_allow_html=True
+            )
         else:
             st.caption("No metadata found for this item.")
-    else:
-        st.caption("Some metadata columns are missing for this dataset.")
 
-    # Chart + per-item CSV
+    # Filter the selected item and plot
     df_one = df_all.loc[df_all["item_name"] == choice, ["date", "price_usd"]].copy()
-    show_item_chart(f"{choice} ({category_name})", df_one)
+    show_item_chart(f"{choice} ({news_key})", df_one)
 
-    # --- Download: selected item CSV (right under the chart)
+    # Per-item CSV download (raw)
     st.download_button(
-        "Download selected item (CSV)",
+        label="Download selected item (CSV)",
         data=df_one.to_csv(index=False).encode("utf-8"),
         file_name=f"{slugify(news_key)}_{slugify(choice)}.csv",
         mime="text/csv",
