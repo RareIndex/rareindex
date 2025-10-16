@@ -434,8 +434,124 @@ with tab_top10:
         st.info("No ROI data available yet. Make sure your CSVs exist and have 'date' and 'price_usd' columns.")
 
 with tab_cards:
-    st.markdown("<p style='text-align:center; color:#555;'>Tracking monthly median sale prices for a representative Pokémon card.</p>", unsafe_allow_html=True)
-    show_category("Pokémon Card #011 (Cards)", "data/cards/cards_011.csv")
+    st.markdown(
+        "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 trading cards by ROI (demo dataset).</p>",
+        unsafe_allow_html=True
+    )
+
+    try:
+        # Load the full 50-card dataset
+        df_all_cards = read_csv_cached("data/cards/cards_top50.csv")
+    except FileNotFoundError:
+        st.error("Missing file: data/cards/cards_top50.csv — make sure it’s committed and pushed.")
+    else:
+        # Require columns we expect
+        required_cols = {"item_name", "date", "price_usd"}
+        if not required_cols.issubset(set(df_all_cards.columns)):
+            st.error(f"'data/cards/cards_top50.csv' is missing required columns: {required_cols}")
+        else:
+            # Let the user pick a single card to visualize
+            card_names = sorted(df_all_cards["item_name"].dropna().unique().tolist())
+            choice_c = st.selectbox("Choose a card", card_names, index=0, key="card_picker")
+
+            # --- Metadata badges (robust, no dropna filtering) ---
+            meta_cols_c = [
+                "release_year",
+                "retirement_year",
+                "condition",
+                "grade",
+                "category_subtype",
+                "original_retail",
+                "source_platform",
+            ]
+
+            # Normalize relevant string columns
+            for c in ["item_name","condition","grade","category_subtype","source_platform"]:
+                if c in df_all_cards.columns:
+                    df_all_cards[c] = df_all_cards[c].astype(str).str.strip()
+
+            missing_meta = [c for c in meta_cols_c if c not in df_all_cards.columns]
+            if missing_meta:
+                st.warning(f"Missing metadata columns: {missing_meta}")
+            else:
+                meta_row = (
+                    df_all_cards.loc[df_all_cards["item_name"] == choice_c, meta_cols_c]
+                    .head(1)  # no dropna(), show whatever we have
+                )
+
+                if not meta_row.empty:
+                    m = meta_row.iloc[0]
+                    rel = int(m["release_year"]) if pd.notnull(m["release_year"]) else "—"
+                    ret = int(m["retirement_year"]) if pd.notnull(m["retirement_year"]) else "—"
+                    cond = m["condition"] if pd.notnull(m["condition"]) else "—"
+                    grade = m["grade"] if pd.notnull(m["grade"]) else "—"
+                    subtype = m["category_subtype"] if pd.notnull(m["category_subtype"]) else "—"
+                    retail_str = f"${float(m['original_retail']):,.2f}" if pd.notnull(m["original_retail"]) else "—"
+                    source = m["source_platform"] if pd.notnull(m["source_platform"]) else "—"
+
+                    st.markdown(
+                        " ".join([
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Release: {rel}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#eef2ff;color:#1e40af;font-size:12px;'>Retired: {ret}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Condition: {cond}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;'>Grade: {grade}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:12px;'>Type: {subtype}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:12px;'>Orig. Retail: {retail_str}</span>",
+                            f"<span style='display:inline-block;padding:4px 10px;margin:0 6px 8px 0;border-radius:999px;background:#fdf4ff;color:#6b21a8;font-size:12px;'>Source: {source}</span>",
+                        ]),
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.caption("No metadata found for this item.")
+
+            # Filter to the chosen card and hand a tidy df to show_category()
+            df_one_c = df_all_cards.loc[
+                df_all_cards["item_name"] == choice_c, ["date", "price_usd"]
+            ].copy()
+            show_category(f"{choice_c} (Cards)", df_one_c)
+
+            # --- ROI Leaderboard (Top 50 cards) ---
+            st.markdown("### 🧮 ROI Leaderboard")
+
+            lb_period_c = st.radio(
+                "Window",
+                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+                index=2,  # default 1Y
+                horizontal=True,
+                key="cards_leaderboard_window",
+            )
+
+            # Re-use the same leaderboard builder (works on item_name/date/price_usd + metadata)
+            df_lb_c = build_toy_leaderboard(df_all_cards, lb_period_c)
+
+            # Optional quick search
+            q_c = st.text_input("Search (item name contains…)", "", key="cards_lb_search")
+            if q_c.strip():
+                df_lb_c = df_lb_c[df_lb_c["Item"].str.contains(q_c.strip(), case=False, na=False)].copy()
+
+            if df_lb_c.empty:
+                st.info("No leaderboard rows for the selected window yet.")
+            else:
+                df_show_c = df_lb_c.copy()
+                for col in ["Start ($)", "Latest ($)"]:
+                    df_show_c[col] = df_show_c[col].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                for col in ["ROI (%)", "CAGR (%)"]:
+                    df_show_c[col] = df_show_c[col].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+                st.dataframe(
+                    df_show_c[["Item","Subtype","Condition","Grade","Release Year","Start ($)","Latest ($)","ROI (%)","CAGR (%)"]],
+                    width="stretch",
+                )
+
+                csv_bytes_c = df_lb_c.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "Download leaderboard (CSV)",
+                    data=csv_bytes_c,
+                    file_name=f"cards_leaderboard_{lb_period_c}.csv",
+                    mime="text/csv",
+                )
+
+    # News stays at the end of the tab
     render_news("Cards")
 
 with tab_watches:
@@ -559,7 +675,7 @@ with tab_watches:
 
     # News stays at the end of the tab
     render_news("Watches")
-    
+
 with tab_toys:
     st.markdown(
         "<p style='text-align:center; color:#555;'>Tracking monthly median resale for the top 50 collectible toys by ROI (demo dataset).</p>",
