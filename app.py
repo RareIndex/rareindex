@@ -696,6 +696,60 @@ with tab_toys:
             # ---- Single-item chart section ----
             toy_names = sorted(df_all_toys["item_name"].dropna().unique().tolist())
             choice = st.selectbox("Choose a toy", toy_names, index=0, key="toy_picker")
+            # --- 📈 Category Summary (Toys) ---
+            st.markdown("### 📈 Category Summary")
+
+            sum_period = st.radio(
+                "Summary window",
+                ["3M", "6M", "1Y", "2Y", "YTD", "All"],
+                index=2,  # default 1Y
+                horizontal=True,
+                key="toys_summary_window",
+            )
+
+            df_lb_sum = build_toy_leaderboard(df_all_toys, sum_period)
+
+            if df_lb_sum.empty:
+                st.info("No summary available for this window.")
+            else:
+                # KPIs
+                n_items = int(len(df_lb_sum))
+                avg_roi = float(df_lb_sum["ROI (%)"].mean())
+                med_roi = float(df_lb_sum["ROI (%)"].median())
+                top_row = df_lb_sum.iloc[0]
+                bottom_row = df_lb_sum.iloc[-1]
+
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Items", f"{n_items}")
+                c2.metric("Avg ROI", f"{avg_roi:,.2f}%")
+                c3.metric("Median ROI", f"{med_roi:,.2f}%")
+                c4.metric("Top Item ROI", f"{top_row['ROI (%)']:,.2f}%")
+
+                # Top / Bottom tables (small)
+                st.markdown("#### Top & Bottom performers")
+                top3 = df_lb_sum.head(3).copy()
+                bot3 = df_lb_sum.tail(3).copy()
+
+                # Pretty format for display
+                for df_show in (top3, bot3):
+                    df_show["Start ($)"]  = df_show["Start ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                    df_show["Latest ($)"] = df_show["Latest ($)"].apply(lambda v: f"${v:,.2f}" if pd.notnull(v) else "—")
+                    df_show["ROI (%)"]    = df_show["ROI (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+                    df_show["CAGR (%)"]   = df_show["CAGR (%)"].apply(lambda v: f"{v:,.2f}%" if pd.notnull(v) else "—")
+
+                colA, colB = st.columns(2)
+                with colA:
+                    st.caption("Top 3 (by ROI)")
+                    st.dataframe(
+                        top3[["Item","Subtype","ROI (%)","CAGR (%)","Start ($)","Latest ($)"]],
+                        width="stretch",
+                    )
+                with colB:
+                    st.caption("Bottom 3 (by ROI)")
+                    st.dataframe(
+                        bot3[["Item","Subtype","ROI (%)","CAGR (%)","Start ($)","Latest ($)"]],
+                        width="stretch",
+                    )
 
             # Show metadata for the selected toy
             meta_cols = [
