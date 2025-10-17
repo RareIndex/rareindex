@@ -8,6 +8,8 @@ from io import BytesIO
 import zipfile
 
 # ================ Basic config ================
+import streamlit as st
+
 st.set_page_config(page_title="The Rare Index", page_icon="favicon.png", layout="wide")
 
 # --- Light investor theme (brand bar, fonts, spacing) ---
@@ -25,7 +27,7 @@ html, body, [class*="css"] {
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 .block-container{
-  padding-top: 0.75rem;
+  padding-top: 1.4rem;   /* bumped from 0.75rem to avoid clipping */
   padding-bottom: 2.0rem;
   max-width: 1200px;
 }
@@ -36,6 +38,7 @@ h1,h2,h3,h4{
 h1{
   font-weight: 700;
   color: var(--ri-accent);
+  text-align: center;         /* center the hero title */
 }
 h2,h3,h4{
   color:#111827;
@@ -44,15 +47,14 @@ small, .ri-muted{ color: var(--ri-muted); }
 [data-testid="stMetricValue"]{ font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
 [data-testid="stMetricLabel"]{ color:#374151; }
 
+/* Brand bar styling */
 .ri-brandbar{
   background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 8px 0 18px 0;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0; /* adds safe top margin */
 }
 .ri-brandbar .left{
   font-weight: 700;
@@ -76,10 +78,25 @@ small, .ri-muted{ color: var(--ri-muted); }
 </style>
 """, unsafe_allow_html=True)
 
+# Add small spacer before brand bar (prevents header clipping)
+st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+# --- Brand bar ---
 st.markdown("""
 <div class="ri-brandbar">
   <div class="left">RARE INDEX <span class="ri-badge">BETA</span></div>
   <div class="right">Demo data · Not financial advice</div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- Hero Header (centered) ---
+st.markdown("""
+<div class="ri-hero">
+  <h1 class="ri-h1">The Rare Index</h1>
+  <p class="ri-sub">Explore alternative assets versus market benchmarks</p>
+  <div class="ri-callout">
+    Demo platform for tracking cards, watches, and toys against S&amp;P 500, Nasdaq, and Dow. Data is illustrative only.
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
