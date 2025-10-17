@@ -841,6 +841,10 @@ with tab_validator:
 # =============================
 # Footer / Info
 # =============================
+from datetime import datetime
+BUILD = "cloud-verify 2025-10-17 04:30Z"
+st.caption(f"Build: {BUILD} · Python {pd.__version__ if 'pd' in globals() else ''}")
+
 st.info("Waiting for eBay Growth Check approval. Live API calls will replace demo/CSV here when enabled.")
 st.markdown("---")
 st.caption("RI Beta — Demo Data Only. Market lines use fixed 2025 YTD endpoints for simplicity.")
