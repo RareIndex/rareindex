@@ -7,74 +7,80 @@ import feedparser
 from io import BytesIO
 import zipfile
 
-# ================ Basic config ================
+# ================== Basic config & header UI ==================
+import streamlit as st
+
 st.set_page_config(page_title="The Rare Index", page_icon="favicon.png", layout="wide")
 
-# --- Light investor theme (brand bar, fonts, spacing) ---
+# Global styles (fonts, spacing, brand bar, hero)
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ri-accent:#17663f;        /* brand green */
+  --ri-accent:#17663f;      /* brand green */
   --ri-accent-2:#0f4f31;
-  --ri-muted:#6b7280;         /* gray-500 */
-  --ri-soft:#f7faf9;          /* soft bg */
+  --ri-muted:#6b7280;       /* gray-500 */
+  --ri-soft:#f7faf9;        /* soft bg */
 }
-html, body, [class*="css"] {
-  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+
+html, body, [class*="css"]{
+  font-family:'Inter', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
+
 .block-container{
-  padding-top: 1.6rem;   /* bump to avoid top clipping */
+  padding-top: 1.5rem;      /* bump to avoid clipping under Streamlit top bar */
   padding-bottom: 2rem;
   max-width: 1200px;
 }
-h1,h2,h3,h4{
-  font-family: 'IBM Plex Sans', Inter, sans-serif;
-  letter-spacing: .2px;
+
+/* Headings */
+h1, h2, h3, h4{
+  font-family:'IBM Plex Sans', Inter, sans-serif;
+  letter-spacing:.2px;
 }
-h2,h3,h4{ color:#111827; }
-small, .ri-muted{ color: var(--ri-muted); }
-[data-testid="stMetricValue"]{ font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
+h1{
+  font-weight:700;
+  color:var(--ri-accent);
+  text-align:center;        /* center hero title */
+}
+small, .ri-muted{ color:var(--ri-muted); }
+[data-testid="stMetricValue"]{ font-variant-numeric:tabular-nums; font-family:'IBM Plex Mono', monospace; }
 [data-testid="stMetricLabel"]{ color:#374151; }
 
 /* Brand bar */
 .ri-brandbar{
-  background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
+  background:linear-gradient(90deg, var(--ri-accent), var(--ri-accent-2));
   color:#fff;
   padding:10px 16px;
   border-radius:12px;
   display:flex; align-items:center; justify-content:space-between;
-  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0; /* safe top margin + spacing */
+  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0; /* extra top margin */
 }
 .ri-brandbar .left{ font-weight:700; letter-spacing:.6px; }
 .ri-brandbar .right{ font-weight:500; opacity:.9; }
 .ri-badge{
   display:inline-block; padding:2px 10px; margin-left:10px;
-  background: rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35);
   border-radius:999px; font-size:12px;
 }
 
 /* Hero */
-.ri-hero{ text-align:center; }
-.ri-hero h1{ margin: .25rem 0 .4rem 0; font-weight:700; color: var(--ri-accent); }
-.ri-hero .ri-sub{ margin:0 0 .75rem 0; color:#6b7280; font-size:18px; }
-.ri-hero .ri-callout{
-  display:inline-block; background:#f3f6f5; color:#111827;
-  padding: 14px 16px; border-radius:14px; border:1px solid rgba(0,0,0,.05);
-  font-size:16px;
+.ri-hero{ text-align:center; margin:.35rem 0 .6rem 0; }
+.ri-hero .ri-sub{ color:#4b5563; font-size:18px; margin:.25rem 0 .4rem 0; }
+.ri-callout{
+  display:inline-block; background:var(--ri-soft);
+  padding:14px 16px; border-radius:12px; color:#111827;
+  border:1px solid rgba(0,0,0,.05); font-size:16px;
 }
 
-/* Misc */
-.ri-subtle{ background: var(--ri-soft); padding: 10px 12px; border-radius: 10px; }
-.ri-note{ text-align:center; color:#4b5563; margin:.35rem 0 .6rem 0; }
-.stRadio > div{ gap: 10px; }
+.stRadio > div{ gap:10px; }
 </style>
 """, unsafe_allow_html=True)
 
-# Small spacer before brand bar (prevents any overlap)
+# Small spacer so the brand bar never hugs the very top
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-# --- Brand bar ---
+# Brand bar (top)
 st.markdown("""
 <div class="ri-brandbar">
   <div class="left">RARE INDEX <span class="ri-badge">BETA</span></div>
@@ -82,7 +88,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Hero Header (centered) ---
+# Centered hero
 st.markdown("""
 <div class="ri-hero">
   <h1>The Rare Index</h1>
