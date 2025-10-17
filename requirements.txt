@@ -2,3 +2,4 @@ streamlit
 pandas
 numpy
 feedparser
+# rebuild 20251017043004
