@@ -23,20 +23,70 @@ def inject_header():
     """
     css = """
     <style>
-    :root{--ri-accent:#17663f;--ri-accent-2:#0f4f31;}
-    .block-container{padding-top:1.25rem;padding-bottom:2rem;max-width:1200px;}
-    h1,h2,h3,h4{font-family:'IBM Plex Sans',Inter,sans-serif;letter-spacing:.2px;}
-    h1{font-weight:700;color:var(--ri-accent);text-align:center;}
-    [data-testid="stMetricValue"]{font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace;}
-    [data-testid="stMetricLabel"]{color:#374151;}
-    .ri-brandbar{background:linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));color:#fff;padding:10px 16px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;margin:calc(env(safe-area-inset-top) + 12px) 0 18px 0;}
-    .ri-brandbar .left{font-weight:700;letter-spacing:.6px;}
-    .ri-brandbar .right{font-weight:500;opacity:.9;}
-    .ri-badge{display:inline-block;padding:2px 10px;margin-left:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;font-size:12px;}
-    .ri-hero{text-align:center;margin:.35rem 0 .6rem 0;}
-    .ri-hero .ri-sub{color:#4b5563;font-size:18px;margin:.25rem 0 .4rem 0;}
-    .ri-callout{display:inline-block;background:#f7faf9;padding:14px 16px;border-radius:12px;color:#111827;border:1px solid rgba(0,0,0,.05);font-size:16px;}
-    .stRadio > div{gap:10px;}
+    :root{
+      --ri-accent:#17663f;       /* brand green */
+      --ri-accent-2:#0f4f31;
+      --ri-soft:#f7faf9;
+    }
+
+    /* App container spacing + max width */
+    .block-container{
+      padding-top: 1.25rem;
+      padding-bottom: 2.0rem;
+      max-width: 1200px;
+    }
+
+    /* Headings */
+    h1, h2, h3, h4{
+      font-family: 'IBM Plex Sans', Inter, sans-serif;
+      letter-spacing: .2px;
+    }
+    h1{
+      font-weight: 800;          /* bolder */
+      font-size: 2.4rem;         /* larger */
+      color: #111111;            /* black instead of green */
+      text-align: center;
+      margin-top: .8rem;
+      margin-bottom: .6rem;
+    }
+
+    /* Metrics font tuning */
+    [data-testid="stMetricValue"]{
+      font-variant-numeric: tabular-nums;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    [data-testid="stMetricLabel"]{ color:#374151; }
+
+    /* Brand bar */
+    .ri-brandbar{
+      background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
+      color:#fff;
+      padding:10px 16px;
+      border-radius:12px;
+      display:flex; align-items:center; justify-content:space-between;
+      /* more breathing room from the very top + a bit more below */
+      margin: calc(env(safe-area-inset-top) + 30px) 0 28px 0;
+    }
+    .ri-brandbar .left{ font-weight:700; letter-spacing:.6px; }
+    .ri-brandbar .right{ font-weight:500; opacity:.9; }
+    .ri-badge{
+      display:inline-block; padding:2px 10px; margin-left:10px;
+      background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35);
+      border-radius:999px; font-size:12px;
+    }
+
+    /* Hero */
+    .ri-hero{ text-align:center; margin:.35rem 0 .6rem 0; }
+    .ri-hero .ri-sub{ color:#4b5563; font-size:18px; margin:.25rem 0 .4rem 0; }
+    .ri-callout{
+      display:inline-block; background:var(--ri-soft);
+      padding:14px 16px; border-radius:12px; color:#111827;
+      border:1px solid rgba(0,0,0,.05); font-size:16px;
+      margin-bottom: 1.8rem;   /* extra gap above the tabs */
+    }
+
+    /* Radio spacing */
+    .stRadio > div{ gap:10px; }
     </style>
     """
     # Use st.html so tags are not stripped
@@ -66,12 +116,9 @@ inject_header()
 render_brandbar()
 render_hero()
 
-
 # =============================
 # Utils
 # =============================
-
-
 @st.cache_data(ttl=600)
 def read_csv_cached(path: str) -> pd.DataFrame:
     """Read and clean a CSV once; cache for 10 minutes."""
