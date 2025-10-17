@@ -39,16 +39,19 @@ def inject_header():
     /* Headings */
     h1, h2, h3, h4{
       font-family: 'IBM Plex Sans', Inter, sans-serif;
-      letter-spacing: .2px;
+      letter-spacing: 0.2px;
     }
     h1{
-      font-weight: 800;          /* bolder */
-      font-size: 2.4rem;         /* larger */
-      color: #111111;            /* black instead of green */
+      font-family: 'IBM Plex Sans', Inter, sans-serif;
+      font-weight: 700;
+      font-size: 2.6rem;
+      color: #111111;
       text-align: center;
       margin-top: .8rem;
       margin-bottom: .6rem;
+      letter-spacing: 0.2px;
     }
+
 
     /* Metrics font tuning */
     [data-testid="stMetricValue"]{
