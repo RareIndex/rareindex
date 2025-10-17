@@ -14,7 +14,6 @@ st.set_page_config(page_title="The Rare Index", page_icon="favicon.png", layout=
 
 # Global styles (fonts, spacing, brand bar, hero)
 st.markdown("""
-            
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -32,6 +31,7 @@ html, body, [class*="css"]{
   padding-top: 1.4rem;   /* was 0.75rem */
   padding-bottom: 2.0rem;
   max-width: 1200px;
+}  /* ← the missing brace */
 
 /* Headings */
 h1, h2, h3, h4{
@@ -41,20 +41,25 @@ h1, h2, h3, h4{
 h1{
   font-weight:700;
   color:var(--ri-accent);
-  text-align:center;        /* center hero title */
+  text-align:center;
 }
 small, .ri-muted{ color:var(--ri-muted); }
 [data-testid="stMetricValue"]{ font-variant-numeric:tabular-nums; font-family:'IBM Plex Mono', monospace; }
 [data-testid="stMetricLabel"]{ color:#374151; }
 
+/* Note text used under section intros */
+.ri-note{ text-align:center; color:#555; }
+
+/* Brand bar */
 .ri-brandbar{
   background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
   color:#fff;
   padding:10px 16px;
   border-radius:12px;
   display:flex;align-items:center;justify-content:space-between;
-  margin: 16px 0 18px 0; /* was 8px 0 18px 0 */
+  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0;
 }
+            
 .ri-brandbar .left{ font-weight:700; letter-spacing:.6px; }
 .ri-brandbar .right{ font-weight:500; opacity:.9; }
 .ri-badge{
@@ -290,15 +295,6 @@ def show_item_chart(title: str, df_source: pd.DataFrame):
     st.caption("Recent data points")
     st.dataframe(recent[["Date","Price ($)"]])
 
-def build_export_zip(category_slug: str,
-                     win_key: str,
-                     df_all: pd.DataFrame,
-                     df_lb_raw: pd.DataFrame,
-                     top3_raw: pd.DataFrame,
-                     bot3_raw: pd.DataFrame,
-                     choice: str,
-                     df_one_raw: pd.DataFrame) -> bytes:
-    """
     Returns ZIP bytes containing:
       - full dataset
       - leaderboard for current window
