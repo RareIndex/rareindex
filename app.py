@@ -8,8 +8,6 @@ from io import BytesIO
 import zipfile
 
 # ================ Basic config ================
-import streamlit as st
-
 st.set_page_config(page_title="The Rare Index", page_icon="favicon.png", layout="wide")
 
 # --- Light investor theme (brand bar, fonts, spacing) ---
@@ -20,65 +18,60 @@ st.markdown("""
   --ri-accent:#17663f;        /* brand green */
   --ri-accent-2:#0f4f31;
   --ri-muted:#6b7280;         /* gray-500 */
-  --ri-bg:#ffffff;            /* page bg */
-  --ri-soft:#f7faf9;          /* cards/soft bg */
+  --ri-soft:#f7faf9;          /* soft bg */
 }
 html, body, [class*="css"] {
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 .block-container{
-  padding-top: 1.4rem;   /* bumped from 0.75rem to avoid clipping */
-  padding-bottom: 2.0rem;
+  padding-top: 1.6rem;   /* bump to avoid top clipping */
+  padding-bottom: 2rem;
   max-width: 1200px;
 }
 h1,h2,h3,h4{
   font-family: 'IBM Plex Sans', Inter, sans-serif;
   letter-spacing: .2px;
 }
-h1{
-  font-weight: 700;
-  color: var(--ri-accent);
-  text-align: center;         /* center the hero title */
-}
-h2,h3,h4{
-  color:#111827;
-}
+h2,h3,h4{ color:#111827; }
 small, .ri-muted{ color: var(--ri-muted); }
 [data-testid="stMetricValue"]{ font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
 [data-testid="stMetricLabel"]{ color:#374151; }
 
-/* Brand bar styling */
+/* Brand bar */
 .ri-brandbar{
   background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
   color:#fff;
   padding:10px 16px;
   border-radius:12px;
-  display:flex;align-items:center;justify-content:space-between;
-  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0; /* adds safe top margin */
+  display:flex; align-items:center; justify-content:space-between;
+  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0; /* safe top margin + spacing */
 }
-.ri-brandbar .left{
-  font-weight: 700;
-  letter-spacing: .6px;
-}
-.ri-brandbar .right{
-  font-weight: 500; opacity:.9;
-}
+.ri-brandbar .left{ font-weight:700; letter-spacing:.6px; }
+.ri-brandbar .right{ font-weight:500; opacity:.9; }
 .ri-badge{
   display:inline-block; padding:2px 10px; margin-left:10px;
   background: rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35);
   border-radius:999px; font-size:12px;
 }
-.ri-subtle{
-  background: var(--ri-soft); padding: 10px 12px; border-radius: 10px;
+
+/* Hero */
+.ri-hero{ text-align:center; }
+.ri-hero h1{ margin: .25rem 0 .4rem 0; font-weight:700; color: var(--ri-accent); }
+.ri-hero .ri-sub{ margin:0 0 .75rem 0; color:#6b7280; font-size:18px; }
+.ri-hero .ri-callout{
+  display:inline-block; background:#f3f6f5; color:#111827;
+  padding: 14px 16px; border-radius:14px; border:1px solid rgba(0,0,0,.05);
+  font-size:16px;
 }
-.ri-note{
-  text-align:center; color:#4b5563; margin:.35rem 0 .6rem 0;
-}
+
+/* Misc */
+.ri-subtle{ background: var(--ri-soft); padding: 10px 12px; border-radius: 10px; }
+.ri-note{ text-align:center; color:#4b5563; margin:.35rem 0 .6rem 0; }
 .stRadio > div{ gap: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
-# Add small spacer before brand bar (prevents header clipping)
+# Small spacer before brand bar (prevents any overlap)
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # --- Brand bar ---
@@ -92,8 +85,8 @@ st.markdown("""
 # --- Hero Header (centered) ---
 st.markdown("""
 <div class="ri-hero">
-  <h1 class="ri-h1">The Rare Index</h1>
-  <p class="ri-sub">Explore alternative assets versus market benchmarks</p>
+  <h1>The Rare Index</h1>
+  <div class="ri-sub">Explore alternative assets versus market benchmarks</div>
   <div class="ri-callout">
     Demo platform for tracking cards, watches, and toys against S&amp;P 500, Nasdaq, and Dow. Data is illustrative only.
   </div>
@@ -519,12 +512,6 @@ def render_category_tab(category_name: str, csv_path: str, news_key: str):
 
     # News
     render_news(news_key)
-
-# ================ Header & Intro ================
-st.markdown("<h1>The Rare Index</h1>", unsafe_allow_html=True)
-st.markdown("<p class='ri-muted' style='text-align:center;'>Explore alternative assets versus market benchmarks</p>", unsafe_allow_html=True)
-st.markdown("<div class='ri-subtle' style='text-align:center;'>Demo platform for tracking cards, watches, and toys against S&P 500, Nasdaq, and Dow. Data is illustrative only.</div>", unsafe_allow_html=True)
-st.markdown("---")
 
 # ================ Tabs ================
 tab_cards, tab_watches, tab_toys, tab_live, tab_roi, tab_top10, tab_validator = st.tabs(
