@@ -66,37 +66,12 @@ inject_header()
 render_brandbar()
 render_hero()
 
-# Spacer so the brand bar never hugs the very top
-st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
-# Brand bar
-st.markdown(
-    """
-<div class="ri-brandbar">
-  <div class="left">RARE INDEX <span class="ri-badge">BETA</span></div>
-  <div class="right">Demo data · Not financial advice</div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-# Hero
-st.markdown(
-    """
-<div class="ri-hero">
-  <h1>The Rare Index</h1>
-  <div class="ri-sub">Explore alternative assets versus market benchmarks</div>
-  <div class="ri-callout">
-    Demo platform for tracking cards, watches, and toys against S&amp;P 500, Nasdaq, and Dow. Data is illustrative only.
-  </div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
 
 # =============================
 # Utils
 # =============================
+
+
 @st.cache_data(ttl=600)
 def read_csv_cached(path: str) -> pd.DataFrame:
     """Read and clean a CSV once; cache for 10 minutes."""
