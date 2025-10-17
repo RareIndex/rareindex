@@ -15,83 +15,56 @@ import feedparser
 # =============================
 st.set_page_config(page_title="The Rare Index", page_icon="favicon.png", layout="wide")
 
-st.markdown(
+# ==== Minimal, safe header injection (no markdown sanitation) ====
+def inject_header():
+    head = """
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
     """
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --ri-accent:#17663f;      /* brand green */
-  --ri-accent-2:#0f4f31;
-  --ri-muted:#6b7280;       /* gray-500 */
-  --ri-soft:#f7faf9;        /* soft bg */
-}
+    css = """
+    <style>
+    :root{--ri-accent:#17663f;--ri-accent-2:#0f4f31;}
+    .block-container{padding-top:1.25rem;padding-bottom:2rem;max-width:1200px;}
+    h1,h2,h3,h4{font-family:'IBM Plex Sans',Inter,sans-serif;letter-spacing:.2px;}
+    h1{font-weight:700;color:var(--ri-accent);text-align:center;}
+    [data-testid="stMetricValue"]{font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace;}
+    [data-testid="stMetricLabel"]{color:#374151;}
+    .ri-brandbar{background:linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));color:#fff;padding:10px 16px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;margin:calc(env(safe-area-inset-top) + 12px) 0 18px 0;}
+    .ri-brandbar .left{font-weight:700;letter-spacing:.6px;}
+    .ri-brandbar .right{font-weight:500;opacity:.9;}
+    .ri-badge{display:inline-block;padding:2px 10px;margin-left:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;font-size:12px;}
+    .ri-hero{text-align:center;margin:.35rem 0 .6rem 0;}
+    .ri-hero .ri-sub{color:#4b5563;font-size:18px;margin:.25rem 0 .4rem 0;}
+    .ri-callout{display:inline-block;background:#f7faf9;padding:14px 16px;border-radius:12px;color:#111827;border:1px solid rgba(0,0,0,.05);font-size:16px;}
+    .stRadio > div{gap:10px;}
+    </style>
+    """
+    # Use st.html so tags are not stripped
+    st.html(head + css)
 
-html, body, [class*="css"]{
-  font-family:'Inter', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-}
+def render_brandbar():
+    st.html("""
+    <div class="ri-brandbar">
+      <div class="left">RARE INDEX <span class="ri-badge">BETA</span></div>
+      <div class="right">Demo data · Not financial advice</div>
+    </div>
+    """)
 
-/* App container spacing + max width */
-.block-container{
-  padding-top: 1.25rem;
-  padding-bottom: 2.0rem;
-  max-width: 1200px;
-}
+def render_hero():
+    st.html("""
+    <div class="ri-hero">
+      <h1>The Rare Index</h1>
+      <div class="ri-sub">Explore alternative assets versus market benchmarks</div>
+      <div class="ri-callout">
+        Demo platform for tracking cards, watches, and toys against S&amp;P 500, Nasdaq, and Dow. Data is illustrative only.
+      </div>
+    </div>
+    """)
 
-/* Headings */
-h1, h2, h3, h4{
-  font-family:'IBM Plex Sans', Inter, sans-serif;
-  letter-spacing:.2px;
-}
-h1{
-  font-weight:700;
-  color:var(--ri-accent);
-  text-align:center;
-}
-
-/* Metrics font tuning */
-[data-testid="stMetricValue"]{
-  font-variant-numeric: tabular-nums;
-  font-family:'IBM Plex Mono', monospace;
-}
-[data-testid="stMetricLabel"]{ color:#374151; }
-
-small, .ri-muted{ color:var(--ri-muted); }
-
-/* Note text used under section intros */
-.ri-note{ text-align:center; color:#555; }
-
-/* Brand bar */
-.ri-brandbar{
-  background: linear-gradient(90deg,var(--ri-accent),var(--ri-accent-2));
-  color:#fff;
-  padding:10px 16px;
-  border-radius:12px;
-  display:flex; align-items:center; justify-content:space-between;
-  margin: calc(env(safe-area-inset-top) + 12px) 0 18px 0;
-}
-.ri-brandbar .left{ font-weight:700; letter-spacing:.6px; }
-.ri-brandbar .right{ font-weight:500; opacity:.9; }
-.ri-badge{
-  display:inline-block; padding:2px 10px; margin-left:10px;
-  background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.35);
-  border-radius:999px; font-size:12px;
-}
-
-/* Hero */
-.ri-hero{ text-align:center; margin:.35rem 0 .6rem 0; }
-.ri-hero .ri-sub{ color:#4b5563; font-size:18px; margin:.25rem 0 .4rem 0; }
-.ri-callout{
-  display:inline-block; background:var(--ri-soft);
-  padding:14px 16px; border-radius:12px; color:#111827;
-  border:1px solid rgba(0,0,0,.05); font-size:16px;
-}
-
-/* Radio spacing */
-.stRadio > div{ gap:10px; }
-</style>
-""",
-    unsafe_allow_html=True,
-)
+# --- call these once, immediately after set_page_config ---
+inject_header()
+render_brandbar()
+render_hero()
 
 # Spacer so the brand bar never hugs the very top
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
