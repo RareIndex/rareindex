@@ -1,5 +1,17 @@
-streamlit
-pandas
-numpy
-feedparser
-# rebuild 20251017043004
+# Rare Index - Python Dependencies
+
+# Streamlit
+streamlit>=1.28.0
+
+# Data & Database
+snowflake-connector-python>=3.0.0
+pandas>=2.0.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Data Processing
+numpy>=1.24.0
+
+# Optional: For future API integrations
+# python-dotenv>=1.0.0  # If using .env files locally
