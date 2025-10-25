@@ -1,0 +1,68 @@
+name: YFinance → Snowflake (Nightly)
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # Runs daily at 7 AM UTC (~midnight PST)
+  workflow_dispatch:      # Allows manual runs
+
+jobs:
+  yfinance-to-snowflake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install snowflake-connector-python pandas yfinance
+
+      - name: Run YFinance → Snowflake
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          YF_SYMBOLS: ${{ secrets.YF_SYMBOLS }}
+        run: |
+          python <<'PYCODE'
+          import os, pandas as pd, yfinance as yf
+          import snowflake.connector
+          from datetime import datetime
+
+          account = os.environ["SNOWFLAKE_ACCOUNT"]
+          user = os.environ["SNOWFLAKE_USER"]
+          password = os.environ["SNOWFLAKE_PASSWORD"]
+          symbols = os.environ["YF_SYMBOLS"].split(",")
+
+          print(f"Fetching symbols: {symbols}")
+          data_frames = []
+          for s in symbols:
+              df = yf.download(s, period="1d", interval="1h")
+              df.reset_index(inplace=True)
+              df["SYMBOL"] = s
+              data_frames.append(df)
+          full_df = pd.concat(data_frames)
+
+          conn = snowflake.connector.connect(
+              user=user,
+              password=password,
+              account=account,
+              warehouse="RAREIDX_WH",
+              database="RAREINDEX_DB",
+              schema="BRONZE",
+          )
+
+          cur = conn.cursor()
+          for _, row in full_df.iterrows():
+              cur.execute("""
+                  INSERT INTO BENCHMARKS_YF_RAW (FETCHED_AT, SYMBOL, PAYLOAD)
+                  SELECT CURRENT_TIMESTAMP(), %s, PARSE_JSON(%s)
+              """, (row["SYMBOL"], row.to_json()))
+          conn.close()
+          print("✅ Data uploaded successfully.")
+          PYCODE
