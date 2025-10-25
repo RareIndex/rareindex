@@ -22,7 +22,7 @@ jobs:
         run: |
           pip install snowflake-connector-python pandas yfinance
 
-      - name: Run YFinance → Snowflake
+            - name: Run YFinance → Snowflake
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -30,24 +30,16 @@ jobs:
           YF_SYMBOLS: ${{ secrets.YF_SYMBOLS }}
         run: |
           python <<'PYCODE'
-          import os, pandas as pd, yfinance as yf
+          import os, json, pandas as pd, yfinance as yf
           import snowflake.connector
           from datetime import datetime
 
-          account = os.environ["SNOWFLAKE_ACCOUNT"]
-          user = os.environ["SNOWFLAKE_USER"]
+          account  = os.environ["SNOWFLAKE_ACCOUNT"]
+          user     = os.environ["SNOWFLAKE_USER"]
           password = os.environ["SNOWFLAKE_PASSWORD"]
-          symbols = os.environ["YF_SYMBOLS"].split(",")
+          symbols  = os.environ.get("YF_SYMBOLS", "^GSPC,^DJI,^IXIC").split(",")
 
-          print(f"Fetching symbols: {symbols}")
-          data_frames = []
-          for s in symbols:
-              df = yf.download(s, period="1d", interval="1h")
-              df.reset_index(inplace=True)
-              df["SYMBOL"] = s
-              data_frames.append(df)
-          full_df = pd.concat(data_frames)
-
+          print("Connecting to Snowflake...", account, user)
           conn = snowflake.connector.connect(
               user=user,
               password=password,
@@ -55,14 +47,62 @@ jobs:
               warehouse="RAREIDX_WH",
               database="RAREINDEX_DB",
               schema="BRONZE",
+              role="RAREIDX_APP_ROLE",
           )
-
           cur = conn.cursor()
-          for _, row in full_df.iterrows():
-              cur.execute("""
+          cur.execute("""
+              CREATE TABLE IF NOT EXISTS BENCHMARKS_YF_RAW (
+                  FETCHED_AT TIMESTAMP_TZ,
+                  SYMBOL STRING,
+                  PAYLOAD VARIANT
+              )
+          """)
+
+          total_rows = 0
+          for s in symbols:
+              print(f"Fetching {s}...")
+              df = yf.download(s, period="1d", interval="1h", auto_adjust=True)
+              if df.empty:
+                  print(f"[{s}] intraday empty; falling back to 5d daily")
+                  df = yf.download(s, period="5d", interval="1d", auto_adjust=True)
+
+              if df.empty:
+                  print(f"[{s}] still empty — skipping")
+                  continue
+
+              df = df.reset_index()
+
+              def row_json(row):
+                  payload = {
+                      "Datetime": row["Datetime"].isoformat() if hasattr(row["Datetime"], "isoformat") else str(row["Datetime"]),
+                      "Open": float(row.get("Open", 0.0)),
+                      "High": float(row.get("High", 0.0)),
+                      "Low":  float(row.get("Low", 0.0)),
+                      "Close": float(row.get("Close", 0.0)),
+                      "AdjClose": float(row.get("Adj Close", row.get("AdjClose", row.get("Adj_Close", 0.0)))),
+                      "Volume": int(row.get("Volume", 0)),
+                      "Interval": "1h_or_1d_fallback",
+                  }
+                  return json.dumps(payload)
+
+              rows = [(s, row_json(r)) for _, r in df.iterrows()]
+              if not rows:
+                  print(f"[{s}] no rows after cleaning — skipping")
+                  continue
+
+              cur.executemany(
+                  """
                   INSERT INTO BENCHMARKS_YF_RAW (FETCHED_AT, SYMBOL, PAYLOAD)
                   SELECT CURRENT_TIMESTAMP(), %s, PARSE_JSON(%s)
-              """, (row["SYMBOL"], row.to_json()))
+                  """,
+                  rows,
+              )
+              inserted = len(rows)
+              total_rows += inserted
+              print(f"[{s}] inserted {inserted} rows")
+
           conn.close()
-          print("✅ Data uploaded successfully.")
+          print(f"✅ Total rows inserted: {total_rows}")
           PYCODE
+
+         
