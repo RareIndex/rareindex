@@ -1,15 +1,13 @@
 import streamlit as st
+from app.stock_price_viewer import show_stock_viewer
 
 st.set_page_config(page_title="Rare Index", layout="wide")
+st.title("Rare Index")
 
-st.title("Hello, Rare Index!")
-
-tab1, tab2 = st.tabs(["Overview", "Connectivity Tests"])
+tab1, tab2 = st.tabs(["Stock Viewer", "Connectivity Tests"])
 
 with tab1:
-    st.write("Welcome to the Rare Index MVP.")
-    st.write("Data ingestion and UI coming soon.")
+    show_stock_viewer()
 
 with tab2:
-    st.write("API connectivity will be tested here.")
-    st.write("All APIs: yfinance, news, cards, toys, watches")
+    st.write("API connectivity tests coming soon")
